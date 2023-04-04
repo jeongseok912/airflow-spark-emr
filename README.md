@@ -8,7 +8,6 @@
 # 아키텍처
 ![image](https://user-images.githubusercontent.com/22818292/229718534-f9494483-ac64-4ffd-bd4f-b4f82f6d6e14.png)
 
-
 ## 서비스
 
 ### AWS
@@ -25,25 +24,21 @@
   더불어 Hadoop, YARN, JupyterNotebook 같은 Application에 대한 손쉬운 구성, 모니터링 UI 및 로그 제공 등도 편하다.
 
 ### Airflow
-
 Airflow는 크게 2가지 측면으로 사용한다.<br/>
 데이터 수집 프로세스같은 경우 데이터셋을 주기적으로 다운로드하고 S3에 업로드 하기 위해 사용한다.<br/>
 데이터 분석 프로세스같은 경우 데이터 수집 프로세스 이후에 Spark Cluster를 생성하고 Spark Job을 실행시키기 위한 Trigger 역할을 한다.
 
 ### Spark
-
 S3에 적재된 대량의 데이터셋을 분석하고 가공하는데에 사용한다.<br/>
 MPP DB인 Redshift에 저장하고 시각화까지 할 수 있지만, 해당 프로젝트에서는 S3에 추출하는 것으로 범위를 제한한다.
 
 ### GitHub
-
 Airflow DAG에 대한 버전관리 및 배포를 위해 사용한다.
 <br/>
 <br/>
 <br/>
 
 ## 프로세스 개요
-
 자세한 로직에 대한 설명은 아래에서 설명하고 간략하게 프로세스가 어떻게 작동하는지 알아본다.
 
 ### DAG 개발 및 배포 프로세스
@@ -57,3 +52,18 @@ Airflow DAG에 대한 버전관리 및 배포를 위해 사용한다.
 1. 데이터셋 수집 프로세스가 완료되었는지 체크 후, Airflow EMR Cluster를 생성하고 EMR의 spark-submit Step을 실행한다.
 2. 실행된 Spark Application은 데이터 수집 프로세스에서 S3에 저장한 데이터셋을 Source로 읽어들여 분석하고 가공한다.
 3. 가공된 데이터셋을 S3에 저장한다.
+<br/>
+<br/>
+<br/>
+
+## Cluster 아키텍처
+### Airflow Cluster
+![image](https://user-images.githubusercontent.com/22818292/229733686-d620d084-5630-4267-8cc0-e9304cccb916.png)
+
+![image](https://user-images.githubusercontent.com/22818292/229733062-d2b1f78a-48cf-449a-a260-72036dd712b1.png)
+
+![image](https://user-images.githubusercontent.com/22818292/229720475-902bf7f1-6f3a-49c5-ac58-08916ae79cae.png)
+![image](https://user-images.githubusercontent.com/22818292/229720767-5de8569c-e985-47c4-9ada-b2f37077d961.png)
+![image](https://user-images.githubusercontent.com/22818292/229721220-25eb1958-91f2-44e6-bf14-1c402deb206f.png)
+
+
