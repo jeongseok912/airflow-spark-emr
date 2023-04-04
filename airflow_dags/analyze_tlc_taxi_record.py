@@ -21,9 +21,11 @@ SPARK_STEPS = [
                 "spark-submit",
                 "--deploy-mode",
                 "cluster",
-                "--master",
-                "yarn",
-                "s3://tlc-taxi/scripts/spark_etl.py"
+                "s3://tlc-taxi/scripts/spark_etl.py",
+                "--src",
+                "s3://tlc-taxi/source/2019/",
+                "--output",
+                "s3://tlc-taxi/output/2019/"
             ]
         }
     }
@@ -75,14 +77,13 @@ with DAG(
         job_flow_overrides=JOB_FLOW_OVERRIDES
     )
 
-    '''
     add_steps = EmrAddStepsOperator(
         task_id="add_steps",
         job_flow_id=create_job_flow.output,
         steps=SPARK_STEPS,
         wait_for_completion=True,
     )
-    '''
+
     '''
     start_execution = EmrStartNotebookExecutionOperator(
         task_id="start_execution",
