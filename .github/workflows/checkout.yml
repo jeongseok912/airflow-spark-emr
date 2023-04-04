@@ -7,7 +7,7 @@ jobs:
       - name: checkout DAGs
         uses: actions/checkout@v3
       - name: list
-        run: ll
+        run: ls -al
       - name: pwd
         run: pwd
       - name: remove dags directory
