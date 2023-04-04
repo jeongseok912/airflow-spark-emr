@@ -53,16 +53,19 @@ TLC Taxi Record 데이터셋 중 우버(Uber), 리프트(Lyft) 같은 차량공�
 
 ### AWS
 
-- **RDS (MySQL)** : 수집할 데이터셋에 대한 메타데이터 제공, 수집 시 로깅 용도
+- **RDS (MySQL)** : 수집할 데이터셋에 대한 메타데이터 제공, 수집 시 로깅 용도<br/>
+RDS는 다양한 DB 엔진을 지원하며, 인스턴스 유지 관리에 소요되는 시간을 줄여주고, 읽기 전용 복제본으로 트래픽 부하를 줄이는 등 다양한 이점이 있어 많이 사용한다.<br/>
+정형 데이터 처리도 다뤄보기 위해 사용한다.
 
-- **S3** : 수집한 데이터셋 저장, 가공한 데이터셋 저장 용도
+- **S3** : 수집한 데이터셋 저장, 가공한 데이터셋 저장 용도<br/>
+데이터 및 요청을 파이셔닝하는데 유용하며, DataLake로 활용을 많이 한다.
 
 - **EC2** : Airflow Multi Node Cluster 구성을 위해 사용<br/>
   Airflow 관리형 서비스인 MWAA를 쓸 수 있지만, Airflow Cluster에 대한 이해도를 높이기 위해 여러 대의 EC2로 날 것으로 구성한다.
   
 - **EMR** : Spark 사용 목적<br/>
-  Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. Spark on EMR로도 충분하다.<br/>
-  더불어 Hadoop, YARN, Jupyter Notebook 같은 Application에 대한 손쉬운 구성, 모니터링 UI 및 로그 제공 등도 편하다.
+  Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. EMR은 서비스 하나로 Spark, Hadoop, YARN, Jupyter Notebook 같은 다양한 Application을 간편하게 구성할 수 있도록 도와준다.<br/> 
+  또한 Application에서 제공하는 모니터링 UI를 제공하고, S3에 로깅도 해주기 때문에 debugging도 용이하다. 
 
 ### Airflow
 프로젝트 시나리오의 경우 크게 용도 및 목적을 2가지 프로세스로 분리 및 정의하는데, 이 프로세스를 편하게 스케줄링 및 트리거하기 위해 사용한다.<br/>
@@ -72,16 +75,16 @@ TLC Taxi Record 데이터셋 중 우버(Uber), 리프트(Lyft) 같은 차량공�
 
 ### Spark
 S3에 적재된 대량의 데이터셋을 분석하고 가공하는데 사용한다.<br/>
-MPP DB인 Redshift에 저장하고 시각화까지 하는 파이프라인을 만들 수 있지만, 해당 프로젝트에서는 S3에 추출하는 것으로 범위를 제한한다.
+MPP DB인 Redshift에 저장하고 시각화까지 하는 파이프라인을 만들 수 있지만, 프로젝트의 범위를 S3에 추출하는 것으로 제한한다.
 
 ### GitHub
-Airflow DAG에 대한 버전관리 및 배포를 위해 사용한다.
+Airflow DAG에 대한 저장소, 버전관리 및 배포를 위해 사용한다.
 <br/>
 <br/>
 <br/>
 
 ## 프로세스 개요
-자세한 로직에 대한 설명은 아래에서 설명하고 간략하게 프로세스가 어떻게 작동하는지 알아본다.
+자세한 로직에 대한 설명은 아래에서 하고 간략하게 프로세스가 어떻게 작동하는지 알아본다.
 
 ### DAG 개발 및 배포 프로세스
 1. Local에서 DAG Script 작성 후 GitHub에 Push를 하게 되면 GitHub Actions을 활용하여 Airflow Cluster Node들에 DAG가 배포된다.
@@ -110,7 +113,8 @@ Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
 <br/>
 <br/>
 
-Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다음과 같다.
+Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다음과 같다.<br/>
+내용 편의를 위해 DAG 개발 및 배포 프로세스에 대한 아키텍처도 함께 설명한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/229733686-d620d084-5630-4267-8cc0-e9304cccb916.png)
 **airflow-primary** : Airflow의 주요 프로세스들이 해당 Node에 위치해 있다.
