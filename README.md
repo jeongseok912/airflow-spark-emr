@@ -92,4 +92,6 @@ Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다�
 
 **RDS** : RDS MySQL의 `airflow` DB를 Airflow 메타데이터를 저장하는 DB로 사용한다.
 
+![image](https://user-images.githubusercontent.com/22818292/229800380-274fff08-cf35-470c-9dab-36d25c66d86a.png)
+
 
