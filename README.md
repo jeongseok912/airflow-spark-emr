@@ -6,7 +6,8 @@
 <br/>
 
 # 아키텍처
-![](https://velog.velcdn.com/images/jskim/post/a80a06bb-b55c-4664-a62b-355978be3e0c/image.png)
+![image](https://user-images.githubusercontent.com/22818292/229718534-f9494483-ac64-4ffd-bd4f-b4f82f6d6e14.png)
+
 
 ## 서비스
 
