@@ -61,12 +61,35 @@ Airflow DAG에 대한 버전관리 및 배포를 위해 사용한다.
 
 ## Cluster 아키텍처
 ### Airflow Cluster
-![image](https://user-images.githubusercontent.com/22818292/229733686-d620d084-5630-4267-8cc0-e9304cccb916.png)
+Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
 
 ![image](https://user-images.githubusercontent.com/22818292/229733062-d2b1f78a-48cf-449a-a260-72036dd712b1.png)
 
 ![image](https://user-images.githubusercontent.com/22818292/229720475-902bf7f1-6f3a-49c5-ac58-08916ae79cae.png)
 ![image](https://user-images.githubusercontent.com/22818292/229720767-5de8569c-e985-47c4-9ada-b2f37077d961.png)
 ![image](https://user-images.githubusercontent.com/22818292/229721220-25eb1958-91f2-44e6-bf14-1c402deb206f.png)
+<br/>
+<br/>
+
+Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다음과 같다.
+
+![image](https://user-images.githubusercontent.com/22818292/229733686-d620d084-5630-4267-8cc0-e9304cccb916.png)
+**airflow-primary** : Airflow의 주요 프로세스들이 해당 Node에 위치해 있다.
+-  Scheduler : DAG와 Task를 모니터링하고, 예약된 DAG를 Trigger하고, 실행할 Task를 Executor (Queue)에 제출하는 프로세스
+-  Webserver : Airflow Web UI
+-  Executor : 그림에 보이지 않는데 Executor Logic은 Scheduler 프로세스 안에서 실행되기 때문에 별도 프로세스를 가지고 있지 않다. `CeleryExecutor`로 구성하였으며, Celery Worker에 Task 실행을 Push한다. 
+-  Celery Flower : Celery Worker를 모니터링할 수 있는 Web UI
+
+**airflow-borker** : `CeleryExecutor` 사용 시 Broker와 Result backend 설정이 필요하다. 이 역할로 Redis를 사용한다. 
+-  Broker : Task Queue로, 별다른 설정없이 `default` Queue를 사용
+-  Result backend : Task 상태를 저장한다.
+
+**airflow-worker\*** : 할당된 Task를 실행한다.
+
+**GitHub Actions Runner** : `CeleryExecutor` 사용 시, Celery Worker가 DAG 폴더에 접근할 수 있어야 한다. 그리고 Node들이 동기화 된 DAG를 봐라봐야 한다. <br/>
+예를 들어 Primary Node가 바라보는 DAG가 최신화 되어 있고, Worker Node가 바라보는 DAG는 최신화가 안 되어 있다면 Web UI에서는 최신화 된 DAG Logic을 볼 수 있지만, Task 실행 시 최신화 된 Logic을 실행하지 못한다. <br/>
+따라서 DAG 개발 및 배포의 편의성 측면과 DAG Sync 측면에서 GitHub Repository와 GitHub Actions를 사용한다. Push가 일어났을 때 Airflow Cluster의 모든 Node들의 DAG 폴더를 자동으로 Update 및 Sync 할 수 있도록 하기 위해서 각 Node에 GitHub Actions Self-hosted Runner를 설치하고 구성한다.
+
+**RDS** : RDS MySQL의 `airflow` DB를 Airflow 메타데이터를 저장하는 DB로 사용한다.
 
 
