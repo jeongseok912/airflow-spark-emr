@@ -78,7 +78,11 @@ Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다�
 -  Scheduler : DAG와 Task를 모니터링하고, 예약된 DAG를 Trigger하고, 실행할 Task를 Executor (Queue)에 제출하는 프로세스
 -  Webserver : Airflow Web UI
 -  Executor : 그림에 보이지 않는데 Executor Logic은 Scheduler 프로세스 안에서 실행되기 때문에 별도 프로세스를 가지고 있지 않다. `CeleryExecutor`로 구성하였으며, Celery Worker에 Task 실행을 Push한다. 
--  Celery Flower : Celery Worker를 모니터링할 수 있는 Web UI
+-  Celery Flower : Celery Worker를 모니터링할 수 있는 Web UI<br/><br/>
+  <예시 사진><br/>
+  ![image](https://user-images.githubusercontent.com/22818292/229802412-3c8e0383-0bb8-4f11-a7cf-c93cd997df4a.png)<br/><br/>
+  ![image](https://user-images.githubusercontent.com/22818292/229801680-00edc51a-98a0-4d7e-b519-0a5b3c5b6698.png)<br/><br/>
+  ![image](https://user-images.githubusercontent.com/22818292/229802040-13a734c8-cc29-4dcf-b614-0e6ef6f69e9f.png)
 
 **airflow-borker** : `CeleryExecutor` 사용 시 Broker와 Result backend 설정이 필요하다. 이 역할로 Redis를 사용한다. 
 -  Broker : Task Queue로, 별다른 설정없이 `default` Queue를 사용
