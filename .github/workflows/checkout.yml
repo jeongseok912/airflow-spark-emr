@@ -1,0 +1,30 @@
+name: Deploy DAGs to Airflow Cluster
+on: push
+jobs:
+  checkout-airflow-primary:
+    runs-on: airflow-primary
+    steps:
+      - name: checkout DAGs
+        uses: actions/checkout@v3
+      - name: remove dags directory
+        run: rm -rf /home/ubuntu/airflow/dags
+      - name: copy DAGs
+        run: cp -r $(pwd)/airflow_dags /home/ubuntu/airflow/dags
+  checkout-airflow-worker01:
+    runs-on: airflow-worker01
+    steps:
+      - name: checkout DAGs
+        uses: actions/checkout@v3
+      - name: remove dags directory
+        run: rm -rf /home/ubuntu/airflow/dags
+      - name: copy DAGs
+        run: cp -r $(pwd)/airflow_dags /home/ubuntu/airflow/dags
+  checkout-airflow-worker02:
+    runs-on: airflow-worker02
+    steps:
+      - name: checkout DAGs
+        uses: actions/checkout@v3
+      - name: remove dags directory
+        run: rm -rf /home/ubuntu/airflow/dags
+      - name: copy DAGs
+        run: cp -r $(pwd)/airflow_dags /home/ubuntu/airflow/dags
