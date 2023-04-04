@@ -6,6 +6,10 @@ jobs:
     steps:
       - name: checkout DAGs
         uses: actions/checkout@v3
+      - name: list
+        run: ll
+      - name: pwd
+        run: pwd
       - name: remove dags directory
         run: rm -rf /home/ubuntu/airflow/dags
       - name: copy DAGs
