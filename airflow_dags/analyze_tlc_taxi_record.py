@@ -83,7 +83,7 @@ with DAG(
         wait_for_completion=True,
     )
     '''
-
+    '''
     start_execution = EmrStartNotebookExecutionOperator(
         task_id="start_execution",
         editor_id="e-1SFM5AFSW2P6SVEUKZAHMLZXU",
@@ -98,6 +98,7 @@ with DAG(
         target_states={"RUNNING"},
         poke_interval=5
     )
+    '''
 
 # create_job_flow >> add_steps
-create_job_flow >> start_execution >> wait_for_execution_start
+# create_job_flow >> start_execution >> wait_for_execution_start
