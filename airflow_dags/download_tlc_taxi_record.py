@@ -3,13 +3,14 @@ import requests
 import boto3
 import logging
 import time
-from pprint import pprint as pp
+# from pprint import pprint as pp
 
 from airflow import DAG
 from airflow.decorators import task
-from airflow.operators.python import PythonOperator
-from airflow.providers.mysql.operators.mysql import MySqlOperator
+# from airflow.operators.python import PythonOperator
+# from airflow.providers.mysql.operators.mysql import MySqlOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.models import Variable
 
 
@@ -20,7 +21,7 @@ class DBHandler(logging.StreamHandler):
         self.conn = self.hook.get_conn()
         self.cursor = self.conn.cursor()
 
-    def emit(self, record,):
+    def emit(self, record):
         if record:
             msg = dict(record.msg)
             self.cursor.execute(
@@ -132,6 +133,8 @@ def fetch(url, **context):
             system_args, f"download failed."))
 
     data = response.content
+    print(data)
+    print(type(data))
 
     logger.info(set_system_log(
         system_args, f"download completed."))
@@ -141,6 +144,9 @@ def fetch(url, **context):
         system_args, f"download {download_elpased}s elapsed."))
 
     # upload to s3
+    hook = S3Hook('aws_default')
+    print(hook)
+
     aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
 
