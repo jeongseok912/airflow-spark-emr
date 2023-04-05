@@ -1,6 +1,6 @@
 from datetime import datetime
 import requests
-import boto3
+# import boto3
 import logging
 import time
 # from pprint import pprint as pp
@@ -149,7 +149,7 @@ def fetch(url, **context):
 
     aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
-
+    '''
     s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
     bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
@@ -161,6 +161,7 @@ def fetch(url, **context):
     upload_start = time.time()
 
     s3.put_object(Bucket=bucket, Key=key, Body=data)
+    '''
 
     logger.info(set_system_log(
         system_args, f"S3 upload completed."))
