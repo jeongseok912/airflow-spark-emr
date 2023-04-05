@@ -1,6 +1,6 @@
 from datetime import datetime
 import requests
-# import boto3
+import boto3
 import logging
 import time
 # from pprint import pprint as pp
@@ -10,7 +10,7 @@ from airflow.decorators import task
 # from airflow.operators.python import PythonOperator
 # from airflow.providers.mysql.operators.mysql import MySqlOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.models import Variable
 
 
@@ -144,12 +144,12 @@ def fetch(url, **context):
         system_args, f"download {download_elpased}s elapsed."))
 
     # upload to s3
-    hook = S3Hook('aws_default')
-    print(hook)
+    # hook = S3Hook('aws_default')
+    # print(hook)
 
     aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
-    '''
+
     s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
     bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
@@ -161,7 +161,6 @@ def fetch(url, **context):
     upload_start = time.time()
 
     s3.put_object(Bucket=bucket, Key=key, Body=data)
-    '''
 
     logger.info(set_system_log(
         system_args, f"S3 upload completed."))
