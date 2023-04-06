@@ -3,6 +3,7 @@ import requests
 import boto3
 import logging
 import time
+import os
 # from pprint import pprint as pp
 
 from airflow import DAG
@@ -124,6 +125,8 @@ def fetch(url, **context):
     logger.info(set_system_log(
         system_args, f"download started."))
     download_start = time.time()
+
+    print(os.getlogin())
 
     MB = 1024 * 1024
     chunk = 100 * MB
