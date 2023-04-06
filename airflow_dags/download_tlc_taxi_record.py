@@ -129,7 +129,7 @@ def fetch(url, **context):
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
-            with open("/" + file_name, 'wb') as f:
+            with open(file_name, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=chunk):
                     f.write(chunk)
     '''
