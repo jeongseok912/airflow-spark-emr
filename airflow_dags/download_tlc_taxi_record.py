@@ -174,7 +174,9 @@ def fetch(url, **context):
                     system_args, f"S3 upload started."))
                 upload_start = time.time()
 
-                s3.put_object(Bucket=bucket, Key=key, Body=chunk)
+                mpu = s3.create_multipart_upload(bucket=bucket, key=key)
+                print(mpu)
+                # s3.put_object(Bucket=bucket, Key=key, Body=chunk)
 
                 logger.info(set_system_log(
                     system_args, f"S3 upload completed."))
