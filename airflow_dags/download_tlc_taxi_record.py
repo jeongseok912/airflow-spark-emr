@@ -3,8 +3,6 @@ import requests
 import boto3
 import logging
 import time
-import os
-import pwd
 # from pprint import pprint as pp
 
 from airflow import DAG
@@ -127,8 +125,6 @@ def fetch(url, **context):
         system_args, f"download started."))
     download_start = time.time()
 
-    print(pwd.getpwuid(os.getuid())[0])
-
     '''
     with open(file_name, 'wb') as f:
         for chunk in r.iter_content(chunk_size=chunk):
@@ -144,12 +140,13 @@ def fetch(url, **context):
     print(data)
     print(type(data))
     '''
+    mpu_parts = []
 
     MB = 1024 * 1024
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
-            for chunk in r.iter_content(chunk_size=chunk):
+            for i, chunk in enumerate(r.iter_content(chunk_size=chunk)):
                 logger.info(set_system_log(
                     system_args, f"download completed."))
                 download_end = time.time()
@@ -178,10 +175,11 @@ def fetch(url, **context):
                 mpu_id = mpu['UploadId']
 
                 part = s3.upload_part(
-                    Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=1)
-                print(part)
-                print(type(part))
-                break
+                    Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
+                mpu_parts.append({'PartNumber': i, 'ETag': part['ETag']})
+
+                print(part['ETag'])
+
                 # s3.put_object(Bucket=bucket, Key=key, Body=chunk)
 
                 logger.info(set_system_log(
