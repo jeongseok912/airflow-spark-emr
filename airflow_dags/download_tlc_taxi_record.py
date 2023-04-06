@@ -4,6 +4,7 @@ import boto3
 import logging
 import time
 import os
+import pwd
 # from pprint import pprint as pp
 
 from airflow import DAG
@@ -126,7 +127,7 @@ def fetch(url, **context):
         system_args, f"download started."))
     download_start = time.time()
 
-    print(os.getlogin())
+    print(pwd.getpwuid(os.getuid())[0])
 
     MB = 1024 * 1024
     chunk = 100 * MB
