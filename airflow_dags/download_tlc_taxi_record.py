@@ -194,7 +194,7 @@ def fetch(url, **context):
             print(mpu_parts)
             result = s3.complete_multipart_upload(
                 Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={'Parts': mpu_parts})
-            print result
+            print(result)
 
     downup_end = time.time()
     downup_elapsed = int(downup_end - downup_start)
