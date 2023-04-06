@@ -175,7 +175,12 @@ def fetch(url, **context):
                 upload_start = time.time()
 
                 mpu = s3.create_multipart_upload(Bucket=bucket, Key=key)
-                print(mpu)
+                mpu_id = mpu['UploadId']
+
+                part = s3.upload_part(
+                    Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=1)
+                print(part)
+                print(type(part))
                 break
                 # s3.put_object(Bucket=bucket, Key=key, Body=chunk)
 
