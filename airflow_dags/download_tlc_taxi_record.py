@@ -125,7 +125,14 @@ def fetch(url, **context):
         system_args, f"download started."))
     download_start = time.time()
 
-    response = requests.get(url)
+    MB = 1024 * 1024
+    chunk = 100 * MB
+    with requests.get(url, stream=True) as r:
+        if r.ok:
+            with open(file_name, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=chunk):
+                    f.write(chunk)
+    '''
     if response.status_code != 200:
         logger.error(set_system_log(
             system_args, f"download failed."))
@@ -135,7 +142,7 @@ def fetch(url, **context):
     data = response.content
     print(data)
     print(type(data))
-
+    '''
     logger.info(set_system_log(
         system_args, f"download completed."))
     download_end = time.time()
@@ -160,7 +167,7 @@ def fetch(url, **context):
         system_args, f"S3 upload started."))
     upload_start = time.time()
 
-    s3.put_object(Bucket=bucket, Key=key, Body=data)
+    s3.put_object(Bucket=bucket, Key=key, Body=file_name)
 
     logger.info(set_system_log(
         system_args, f"S3 upload completed."))
