@@ -140,12 +140,25 @@ def fetch(url, **context):
     print(data)
     print(type(data))
     '''
-    mpu_parts = []
 
     MB = 1024 * 1024
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
+            aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
+            aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
+
+            s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
+                              aws_secret_access_key=aws_secret_access_key)
+            bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
+            dir = f"source/{year}"
+            key = f"{dir}/{file_name}"
+
+            mpu_parts = []
+
+            mpu = s3.create_multipart_upload(Bucket=bucket, Key=key)
+            mpu_id = mpu['UploadId']
+
             for i, chunk in enumerate(r.iter_content(chunk_size=chunk), start=1):
                 logger.info(set_system_log(
                     system_args, f"download completed."))
@@ -158,27 +171,16 @@ def fetch(url, **context):
                 # hook = S3Hook('aws_default')
                 # print(hook)
 
-                aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
-                aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
-
-                s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
-                                  aws_secret_access_key=aws_secret_access_key)
-                bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
-                dir = f"source/{year}"
-                key = f"{dir}/{file_name}"
-
                 logger.info(set_system_log(
                     system_args, f"S3 upload started."))
                 upload_start = time.time()
 
-                mpu = s3.create_multipart_upload(Bucket=bucket, Key=key)
-                mpu_id = mpu['UploadId']
-
                 part = s3.upload_part(
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
-                mpu_parts.append({'PartNumber': i, 'ETag': part['ETag']})
+                part_dict = {'PartNumber': i, 'ETag': part['ETag']}
+                mpu_parts.append(part_dict)
 
-                print(part['ETag'])
+                print(part_dict)
 
                 # s3.put_object(Bucket=bucket, Key=key, Body=chunk)
 
@@ -188,6 +190,11 @@ def fetch(url, **context):
                 upload_elapsed = int(upload_end - upload_start)
                 logger.info(set_system_log(
                     system_args, f"upload {upload_elapsed}s elapsed."))
+
+            print(mpu_parts)
+            result = s3.complete_multipart_upload(
+                Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={'Parts': mpu_parts})
+            print result
 
     downup_end = time.time()
     downup_elapsed = int(downup_end - downup_start)
