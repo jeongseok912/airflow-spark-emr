@@ -146,7 +146,7 @@ def fetch(url, **context):
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
-            for i, chunk in enumerate(r.iter_content(chunk_size=chunk)):
+            for i, chunk in enumerate(r.iter_content(chunk_size=chunk), start=1):
                 logger.info(set_system_log(
                     system_args, f"download completed."))
                 download_end = time.time()
