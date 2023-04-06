@@ -129,14 +129,11 @@ def fetch(url, **context):
 
     print(pwd.getpwuid(os.getuid())[0])
 
-    MB = 1024 * 1024
-    chunk = 100 * MB
-    with requests.get(url, stream=True) as r:
-        if r.ok:
-            with open(file_name, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=chunk):
-                    f.write(chunk)
     '''
+    with open(file_name, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=chunk):
+            f.write(chunk)
+
     if response.status_code != 200:
         logger.error(set_system_log(
             system_args, f"download failed."))
@@ -147,38 +144,44 @@ def fetch(url, **context):
     print(data)
     print(type(data))
     '''
-    logger.info(set_system_log(
-        system_args, f"download completed."))
-    download_end = time.time()
-    download_elpased = int(download_end - download_start)
-    logger.info(set_system_log(
-        system_args, f"download {download_elpased}s elapsed."))
 
-    # upload to s3
-    # hook = S3Hook('aws_default')
-    # print(hook)
+    MB = 1024 * 1024
+    chunk = 100 * MB
+    with requests.get(url, stream=True) as r:
+        if r.ok:
+            for chunk in r.iter_content(chunk_size=chunk):
+                logger.info(set_system_log(
+                    system_args, f"download completed."))
+                download_end = time.time()
+                download_elpased = int(download_end - download_start)
+                logger.info(set_system_log(
+                    system_args, f"download {download_elpased}s elapsed."))
 
-    aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
-    aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
+                # upload to s3
+                # hook = S3Hook('aws_default')
+                # print(hook)
 
-    s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
-                      aws_secret_access_key=aws_secret_access_key)
-    bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
-    dir = f"source/{year}"
-    key = f"{dir}/{file_name}"
+                aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
+                aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
 
-    logger.info(set_system_log(
-        system_args, f"S3 upload started."))
-    upload_start = time.time()
+                s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
+                                  aws_secret_access_key=aws_secret_access_key)
+                bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
+                dir = f"source/{year}"
+                key = f"{dir}/{file_name}"
 
-    s3.put_object(Bucket=bucket, Key=key, Body=file_name)
+                logger.info(set_system_log(
+                    system_args, f"S3 upload started."))
+                upload_start = time.time()
 
-    logger.info(set_system_log(
-        system_args, f"S3 upload completed."))
-    upload_end = time.time()
-    upload_elapsed = int(upload_end - upload_start)
-    logger.info(set_system_log(
-        system_args, f"upload {upload_elapsed}s elapsed."))
+                s3.put_object(Bucket=bucket, Key=key, Body=chunk)
+
+                logger.info(set_system_log(
+                    system_args, f"S3 upload completed."))
+                upload_end = time.time()
+                upload_elapsed = int(upload_end - upload_start)
+                logger.info(set_system_log(
+                    system_args, f"upload {upload_elapsed}s elapsed."))
 
     downup_end = time.time()
     downup_elapsed = int(downup_end - downup_start)
