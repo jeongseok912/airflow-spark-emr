@@ -101,7 +101,6 @@ def fetch(url, **context):
     year = file_name.split("-")[0].split("_")[-1]
 
     # get id
-    logger.info("Get ID mapped.")
     id = "NA"
     result = dbhandler.select(
         f"SELECT id FROM dataset_meta WHERE dataset_link = '{url}';")
@@ -120,6 +119,7 @@ def fetch(url, **context):
     dbhandler.set_default_log(system_args)
 
     # download dataset
+    print("################################################################")
     logger.info(url)
     logger.info("Download & S3 upload started.")
     downup_start = time.time()
