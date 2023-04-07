@@ -3,6 +3,7 @@ import requests
 import boto3
 import logging
 import time
+from json import dumps
 
 from airflow import DAG
 from airflow.decorators import task
@@ -150,8 +151,8 @@ def fetch(url, **context):
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
                 part_dict = {"PartNumber": i, "ETag": part["ETag"]}
                 mpu_parts.append(part_dict)
-                print(str(part_dict))
-                logger.info(set_system_log(system_args, f"{str(part_dict)}"))
+                print(dumps(part_dict))
+                logger.info(set_system_log(system_args, f"{dumps(part_dict)}"))
 
                 logger.info(set_system_log(
                     system_args, f"Uploading Chunk {i} to S3 completed."))
