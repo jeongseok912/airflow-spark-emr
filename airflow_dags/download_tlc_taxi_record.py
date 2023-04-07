@@ -21,7 +21,6 @@ class DBHandler(logging.StreamHandler):
     def emit(self, record):
         if record:
             msg = dict(record.msg)
-            print(msg)
             self.cursor.execute(
                 f"INSERT INTO dataset_log VALUES ('{msg['dataset_id']}', '{msg['dag']}', '{msg['run_id']}', '{msg['ti']}', '{msg['logical_date']}', '{msg['msg']}', SYSDATE());")
 
@@ -151,7 +150,6 @@ def fetch(url, **context):
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
                 part_dict = {"PartNumber": i, "ETag": part["ETag"]}
                 mpu_parts.append(part_dict)
-                print(dumps(part_dict))
                 logger.info(set_system_log(system_args, f"{dumps(part_dict)}"))
 
                 logger.info(set_system_log(
@@ -167,7 +165,7 @@ def fetch(url, **context):
                 Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={"Parts": mpu_parts})
             logger.info(set_system_log(
                 system_args, "S3 upload completed."))
-            logger.info(set_system_log(system_args, f"{str(result)}"))
+            logger.info(set_system_log(system_args, f"{dumps(result)}"))
 
     logger.info(set_system_log(system_args, "Download & S3 upload completed."))
     downup_end = time.time()
