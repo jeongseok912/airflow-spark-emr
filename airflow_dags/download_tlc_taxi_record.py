@@ -101,6 +101,7 @@ def fetch(url, **context):
     year = file_name.split("-")[0].split("_")[-1]
 
     # get id
+    logger.info("Get ID mapped.")
     id = "NA"
     result = dbhandler.select(
         f"SELECT id FROM dataset_meta WHERE dataset_link = '{url}';")
@@ -144,7 +145,8 @@ def fetch(url, **context):
             logger.info(f"mpu id : {mpu_id}")
 
             for i, chunk in enumerate(r.iter_content(chunk_size=chunk), start=1):
-                logger.info("Uploading Chunk {i} to S3 started.")
+                print("----------------------------------------------------------------")
+                logger.info(f"Uploading Chunk {i} to S3 started.")
                 upload_start = time.time()
 
                 part = s3.upload_part(
@@ -157,6 +159,7 @@ def fetch(url, **context):
                 upload_end = time.time()
                 upload_elapsed = int(upload_end - upload_start)
                 logger.info(f"Upload {upload_elapsed}s elapsed.")
+                print("----------------------------------------------------------------")
 
             logger.info("Assembling chunks started.")
             result = s3.complete_multipart_upload(
