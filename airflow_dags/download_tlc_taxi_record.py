@@ -21,11 +21,9 @@ class DBHandler(logging.StreamHandler):
 
     def set_default_log(self, default_log):
         self.default_log = default_log
-        print(f"default_log : {self.default_log}")
 
     def emit(self, record):
         if record:
-            # msg = dict(record.msg)
             self.cursor.execute(
                 f"INSERT INTO dataset_log VALUES ('{self.default_log['dataset_id']}', '{self.default_log['dag']}', '{self.default_log['run_id']}', '{self.default_log['ti']}', '{self.default_log['logical_date']}', '{record.msg}', SYSDATE());")
 
@@ -121,9 +119,8 @@ def fetch(url, **context):
     dbhandler.set_default_log(system_args)
 
     # download dataset
-    logger.info("#########################################################")
-    logger.info(set_system_log(system_args, f"{url}"))
-    logger.info(set_system_log(system_args, "Download & S3 upload started."))
+    logger.info(url)
+    logger.info("Download & S3 upload started.")
     downup_start = time.time()
 
     MB = 1024 * 1024
@@ -144,39 +141,34 @@ def fetch(url, **context):
 
             mpu = s3.create_multipart_upload(Bucket=bucket, Key=key)
             mpu_id = mpu['UploadId']
-            logger.info(set_system_log(system_args, f"mpu id : {mpu_id}"))
+            logger.info(f"mpu id : {mpu_id}")
 
             for i, chunk in enumerate(r.iter_content(chunk_size=chunk), start=1):
-                logger.info(set_system_log(
-                    system_args, f"Uploading Chunk {i} to S3 started."))
+                logger.info("Uploading Chunk {i} to S3 started.")
                 upload_start = time.time()
 
                 part = s3.upload_part(
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
                 part_dict = {"PartNumber": i, "ETag": part["ETag"]}
                 mpu_parts.append(part_dict)
-                logger.info(set_system_log(system_args, f"{dumps(part_dict)}"))
+                logger.info(f"{dumps(part_dict)}")
 
-                logger.info(set_system_log(
-                    system_args, f"Uploading Chunk {i} to S3 completed."))
+                logger.info(f"Uploading Chunk {i} to S3 completed.")
                 upload_end = time.time()
                 upload_elapsed = int(upload_end - upload_start)
-                logger.info(set_system_log(
-                    system_args, f"Upload {upload_elapsed}s elapsed."))
+                logger.info(f"Upload {upload_elapsed}s elapsed.")
 
-            logger.info(set_system_log(
-                system_args, "Assembling chunks started."))
+            logger.info("Assembling chunks started.")
             result = s3.complete_multipart_upload(
                 Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={"Parts": mpu_parts})
-            logger.info(set_system_log(
-                system_args, "S3 upload completed."))
-            logger.info(set_system_log(system_args, f"{dumps(result)}"))
+            logger.info("Assembling chunks completed.")
+            logger.info("S3 upload completed.")
+            logger.info(f"{dumps(result)}")
 
-    logger.info(set_system_log(system_args, "Download & S3 upload completed."))
+    logger.info("Download & S3 upload completed.")
     downup_end = time.time()
     downup_elapsed = int(downup_end - downup_start)
-    logger.info(set_system_log(
-        system_args, f"total {downup_elapsed}s elapsed."))
+    logger.info(f"total {downup_elapsed}s elapsed.")
 
     dbhandler.close()
 
