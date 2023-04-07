@@ -25,9 +25,9 @@ class DBHandler(logging.StreamHandler):
 
     def emit(self, record):
         if record:
-            msg = dict(record.msg)
+            # msg = dict(record.msg)
             self.cursor.execute(
-                f"INSERT INTO dataset_log VALUES ('{msg['dataset_id']}', '{msg['dag']}', '{msg['run_id']}', '{msg['ti']}', '{msg['logical_date']}', '{msg['msg']}', SYSDATE());")
+                f"INSERT INTO dataset_log VALUES ('{self.default_log['dataset_id']}', '{self.default_log['dag']}', '{self.default_log['run_id']}', '{self.default_log['ti']}', '{self.default_log['logical_date']}', '{record.msg}', SYSDATE());")
 
     def select(self, sql):
         return self.hook.get_records(sql)
@@ -122,6 +122,7 @@ def fetch(url, **context):
 
     # download dataset
     logger.info(set_system_log(system_args, f"{url}"))
+    logger.info("#########################################################")
     logger.info(set_system_log(system_args, "Download & S3 upload started."))
     downup_start = time.time()
 
