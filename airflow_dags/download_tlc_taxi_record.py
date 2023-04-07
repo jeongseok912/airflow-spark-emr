@@ -20,6 +20,7 @@ class DBHandler(logging.StreamHandler):
     def emit(self, record):
         if record:
             msg = dict(record.msg)
+            print(msg)
             self.cursor.execute(
                 f"INSERT INTO dataset_log VALUES ('{msg['dataset_id']}', '{msg['dag']}', '{msg['run_id']}', '{msg['ti']}', '{msg['logical_date']}', '{msg['msg']}', SYSDATE());")
 
