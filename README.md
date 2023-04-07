@@ -55,7 +55,6 @@ TLC Taxi Record 데이터셋 중 우버(Uber), 리프트(Lyft) 같은 차량공�
 
 - **RDS (MySQL)** : 수집할 데이터셋에 대한 메타데이터 제공, 수집 시 로깅 용도<br/>
 RDS는 다양한 DB 엔진을 지원하며, 인스턴스 유지 관리에 소요되는 시간을 줄여주고, 읽기 전용 복제본으로 트래픽 부하를 줄이는 등 다양한 이점이 있어 많이 사용한다.<br/>
-정형 데이터 처리도 다뤄보기 위해 사용한다.
 
 - **S3** : 수집한 데이터셋 저장, 가공한 데이터셋 저장 용도<br/>
 데이터 및 요청을 파이셔닝하는데 유용하며, DataLake로 활용을 많이 한다.
@@ -103,7 +102,10 @@ Airflow DAG에 대한 저장소, 버전관리 및 배포를 위해 사용한다.
 
 ## Cluster 아키텍처
 ### Airflow Cluster
-Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
+Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.<br/>
+무거운 작업은 EMR로 위임할 것이기 때문에 Airflow Cluster 사양이 굳이 높을 필요는 없다.<br/>
+비용 및 리소스 낭비를 줄이기 위해 높은 사양은 사용하지 않는다.<br/>
+<br/>
 
 ![image](https://user-images.githubusercontent.com/22818292/230561284-e3cd3750-e8fa-4b41-ae2f-7d021cc8c7aa.png)
 
@@ -114,16 +116,15 @@ Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
 Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다음과 같다.<br/>
 내용 편의를 위해 DAG 개발 및 배포 프로세스에 대한 아키텍처도 함께 설명한다.
 
-![image](https://user-images.githubusercontent.com/22818292/229733686-d620d084-5630-4267-8cc0-e9304cccb916.png)
+![image](https://user-images.githubusercontent.com/22818292/230565352-2894ce92-4a1e-4dd8-9e8f-4c70b72d2a37.png)
+
 **airflow-primary** : Airflow의 주요 프로세스들이 해당 Node에 위치해 있다.
 -  Scheduler : DAG와 Task를 모니터링하고, 예약된 DAG를 Trigger하고, 실행할 Task를 Executor (Queue)에 제출하는 프로세스
 -  Webserver : Airflow Web UI
--  Executor : 그림에 보이지 않는데 Executor Logic은 Scheduler 프로세스 안에서 실행되기 때문에 별도 프로세스를 가지고 있지 않다. `CeleryExecutor`로 구성하였으며, Celery Worker에 Task 실행을 Push한다. 
+-  Executor : 그림에 보이지 않는데 Executor Logic은 Scheduler 프로세스 안에서 실행된다. `CeleryExecutor`로 구성하였으며, Celery Worker에 Task 실행을 Push한다. 
 -  Celery Flower : Celery Worker를 모니터링할 수 있는 Web UI<br/><br/>
-  <예시 사진><br/>
-  ![image](https://user-images.githubusercontent.com/22818292/229802412-3c8e0383-0bb8-4f11-a7cf-c93cd997df4a.png)<br/><br/>
-  ![image](https://user-images.githubusercontent.com/22818292/229801680-00edc51a-98a0-4d7e-b519-0a5b3c5b6698.png)<br/><br/>
-  ![image](https://user-images.githubusercontent.com/22818292/229802040-13a734c8-cc29-4dcf-b614-0e6ef6f69e9f.png)
+  ![image](https://user-images.githubusercontent.com/22818292/230565853-30f5cb3a-5927-449c-a6d0-c15759608041.png)
+  <br/>
 
 **airflow-borker** : `CeleryExecutor` 사용 시 Broker와 Result backend 설정이 필요하다. 이 역할로 Redis를 사용한다. 
 -  Broker : Task Queue로, 별다른 설정없이 `default` Queue를 사용
@@ -135,8 +136,48 @@ Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다�
 예를 들어 Primary Node가 바라보는 DAG가 최신화 되어 있고, Worker Node가 바라보는 DAG는 최신화가 안 되어 있다면 Web UI에서는 최신화 된 DAG Logic을 볼 수 있지만, Task 실행 시 최신화 된 Logic을 실행하지 못한다. <br/>
 따라서 DAG 개발 및 배포의 편의성 측면과 DAG Sync 측면에서 GitHub Repository와 GitHub Actions를 사용한다. Push가 일어났을 때 Airflow Cluster의 모든 Node들의 DAG 폴더를 자동으로 Update 및 Sync 할 수 있도록 하기 위해서 각 Node에 GitHub Actions Self-hosted Runner를 설치하고 구성한다.
 
-**RDS** : RDS MySQL의 `airflow` DB를 Airflow 메타데이터를 저장하는 DB로 사용한다.
+**Statsd Exporter** : Airflow Metric을 제공하는 프로세스이다. 이후에 Prometheus와 Grafana와 연동할 예정이다.
+
+**RDS** : RDS (MySQL)의 `airflow` DB를 Airflow 메타데이터를 저장하는 DB로 사용한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/229800380-274fff08-cf35-470c-9dab-36d25c66d86a.png)
+<br/>
 
+### EMR Cluster
+다음과 같은 정의로 구현한다.<br/>
+<br/>
+```yaml
+JOB_FLOW_OVERRIDES = {
+    "Name": "PySpark Cluster",
+    "LogUri": "s3://airflow--log/emr-log/",
+    "ReleaseLabel": "emr-6.10.0",
+    "Applications": [{"Name": "Spark"}, {"Name": "JupyterEnterpriseGateway"}],
+    "Instances": {
+        "EmrManagedMasterSecurityGroup": "sg-0a8997b0ae4e90d07",
+        "EmrManagedSlaveSecurityGroup": "sg-055cef9cc6cc12658",
+        "Ec2KeyName": "airflow",
+        "Ec2SubnetId": "subnet-8cf1eee4",
+        "InstanceGroups": [
+            {
+                "Name": "Primary node",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "MASTER",
+                "InstanceType": "m5.xlarge",
+                "InstanceCount": 1,
+            },
+            {
+                "Name": "Core Node",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "CORE",
+                "InstanceType": "m5.xlarge",
+                "InstanceCount": 2
+            }
+        ],
+        "KeepJobFlowAliveWhenNoSteps": True,
+        "TerminationProtected": False
+    },
+    "JobFlowRole": "EMR_EC2_DefaultRole",
+    "ServiceRole": "EMR_DefaultRole"
+}
+```
 
