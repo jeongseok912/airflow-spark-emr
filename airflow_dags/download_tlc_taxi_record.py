@@ -21,7 +21,7 @@ class DBHandler(logging.StreamHandler):
 
     def set_default_log(self, default_log):
         self.default_log = default_log
-        print(self.default_log)
+        print(f"default_log : {self.default_log}")
 
     def emit(self, record):
         if record:
@@ -121,8 +121,8 @@ def fetch(url, **context):
     dbhandler.set_default_log(system_args)
 
     # download dataset
-    logger.info(set_system_log(system_args, f"{url}"))
     logger.info("#########################################################")
+    logger.info(set_system_log(system_args, f"{url}"))
     logger.info(set_system_log(system_args, "Download & S3 upload started."))
     downup_start = time.time()
 
