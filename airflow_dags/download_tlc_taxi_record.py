@@ -3,14 +3,10 @@ import requests
 import boto3
 import logging
 import time
-# from pprint import pprint as pp
 
 from airflow import DAG
 from airflow.decorators import task
-# from airflow.operators.python import PythonOperator
-# from airflow.providers.mysql.operators.mysql import MySqlOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.models import Variable
 
 
@@ -128,11 +124,11 @@ def fetch(url, **context):
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
-            # aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
-            # aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
-            # s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+            aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
+            aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
 
-            s3 = S3Hook('aws_default')
+            s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
+                              aws_secret_access_key=aws_secret_access_key)
 
             bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
             dir = f"source/{year}"
