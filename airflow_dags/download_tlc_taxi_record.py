@@ -10,7 +10,7 @@ from airflow.decorators import task
 # from airflow.operators.python import PythonOperator
 # from airflow.providers.mysql.operators.mysql import MySqlOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
-# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.models import Variable
 
 
@@ -121,35 +121,19 @@ def fetch(url, **context):
 
     # download dataset
     logger.info(set_system_log(system_args, f"{url}"))
-    logger.info(set_system_log(
-        system_args, f"download started."))
-    download_start = time.time()
-
-    '''
-    with open(file_name, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=chunk):
-            f.write(chunk)
-
-    if response.status_code != 200:
-        logger.error(set_system_log(
-            system_args, f"download failed."))
-        raise Exception(set_system_log(
-            system_args, f"download failed."))
-
-    data = response.content
-    print(data)
-    print(type(data))
-    '''
+    logger.info(set_system_log(system_args, "Download & S3 upload started."))
+    downup_start = time.time()
 
     MB = 1024 * 1024
     chunk = 100 * MB
     with requests.get(url, stream=True) as r:
         if r.ok:
-            aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
-            aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
+            # aws_access_key_id = Variable.get("AWS_ACCESS_KEY_ID")
+            # aws_secret_access_key = Variable.get("AWS_SECRET_ACCESS_KEY")
+            # s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
 
-            s3 = boto3.client("s3", aws_access_key_id=aws_access_key_id,
-                              aws_secret_access_key=aws_secret_access_key)
+            s3 = S3Hook('aws_default')
+
             bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
             dir = f"source/{year}"
             key = f"{dir}/{file_name}"
@@ -158,44 +142,35 @@ def fetch(url, **context):
 
             mpu = s3.create_multipart_upload(Bucket=bucket, Key=key)
             mpu_id = mpu['UploadId']
+            logger.info(set_system_log(system_args, f"mpu id : {mpu_id}"))
 
             for i, chunk in enumerate(r.iter_content(chunk_size=chunk), start=1):
                 logger.info(set_system_log(
-                    system_args, f"download completed."))
-                download_end = time.time()
-                download_elpased = int(download_end - download_start)
-                logger.info(set_system_log(
-                    system_args, f"download {download_elpased}s elapsed."))
-
-                # upload to s3
-                # hook = S3Hook('aws_default')
-                # print(hook)
-
-                logger.info(set_system_log(
-                    system_args, f"S3 upload started."))
+                    system_args, f"Uploading Chunk {i} to S3 started."))
                 upload_start = time.time()
 
                 part = s3.upload_part(
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
                 part_dict = {'PartNumber': i, 'ETag': part['ETag']}
                 mpu_parts.append(part_dict)
-
-                print(part_dict)
-
-                # s3.put_object(Bucket=bucket, Key=key, Body=chunk)
+                logger.info(set_system_log(system_args, part_dict))
 
                 logger.info(set_system_log(
-                    system_args, f"S3 upload completed."))
+                    system_args, f"Uploading Chunk {i} to S3 completed."))
                 upload_end = time.time()
                 upload_elapsed = int(upload_end - upload_start)
                 logger.info(set_system_log(
-                    system_args, f"upload {upload_elapsed}s elapsed."))
+                    system_args, f"Upload {upload_elapsed}s elapsed."))
 
-            print(mpu_parts)
+            logger.info(set_system_log(
+                system_args, "Assembling Chunks started."))
             result = s3.complete_multipart_upload(
                 Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={'Parts': mpu_parts})
-            print(result)
+            logger.info(set_system_log(
+                system_args, "Assembling Chunks & Upload completed."))
+            logger.info(set_system_log(system_args, result))
 
+    logger.info(set_system_log(system_args, "Download & S3 upload completed."))
     downup_end = time.time()
     downup_elapsed = int(downup_end - downup_start)
     logger.info(set_system_log(
