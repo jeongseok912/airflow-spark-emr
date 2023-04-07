@@ -84,14 +84,14 @@ def make_dynamic_url(db, num, **context):
 
 
 @task
-def fetch(dbhandler, url, **context):
+def fetch(db, url, **context):
     formatter = logging.Formatter("%(levelname)s - %(message)s")
     logger = logging.getLogger("dataset")
     logger.setLevel(logging.INFO)
 
     # dbhandler = DBHandler()
-    dbhandler.setFormatter(formatter)
-    logger.addHandler(dbhandler)
+    db.setFormatter(formatter)
+    logger.addHandler(db)
 
     downup_start = time.time()
 
@@ -100,7 +100,7 @@ def fetch(dbhandler, url, **context):
 
     # get id
     id = "NA"
-    result = dbhandler.select(
+    result = db.select(
         f"SELECT id FROM dataset_meta WHERE dataset_link = '{url}';")
 
     for row in result:
@@ -171,7 +171,7 @@ def fetch(dbhandler, url, **context):
     logger.info(set_system_log(
         system_args, f"total {downup_elapsed}s elapsed."))
 
-    dbhandler.close()
+    db.close()
 
 
 with DAG(
