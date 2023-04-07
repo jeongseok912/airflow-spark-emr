@@ -188,4 +188,4 @@ with DAG(
 
     get_latest_dataset_id >> get_urls
 
-    fetch.expand(db, url=get_urls)
+    fetch.expand(db=db, url=get_urls)
