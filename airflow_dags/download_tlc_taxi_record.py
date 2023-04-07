@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 import boto3
 import logging
@@ -182,9 +182,9 @@ def fetch(url, **context):
 
 with DAG(
     'download_tlc_taxi_record',
-    start_date=datetime(2022, 4, 5),
-    schedule=timedelta(minutes=3),
-    catchup=True,
+    start_date=datetime(2022, 2, 28),
+    schedule="@daily",
+    catchup=False,
     tags=["tlc taxi record"]
 ) as dag:
 
