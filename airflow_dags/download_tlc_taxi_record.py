@@ -150,6 +150,7 @@ def fetch(url, **context):
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
                 part_dict = {"PartNumber": i, "ETag": part["ETag"]}
                 mpu_parts.append(part_dict)
+                print(str(part_dict))
                 logger.info(set_system_log(system_args, f"{str(part_dict)}"))
 
                 logger.info(set_system_log(
