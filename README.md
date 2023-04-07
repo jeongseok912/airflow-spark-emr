@@ -105,11 +105,9 @@ Airflow DAG에 대한 저장소, 버전관리 및 배포를 위해 사용한다.
 ### Airflow Cluster
 Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
 
-![image](https://user-images.githubusercontent.com/22818292/229733062-d2b1f78a-48cf-449a-a260-72036dd712b1.png)
+![image](https://user-images.githubusercontent.com/22818292/230561284-e3cd3750-e8fa-4b41-ae2f-7d021cc8c7aa.png)
 
-![image](https://user-images.githubusercontent.com/22818292/229720475-902bf7f1-6f3a-49c5-ac58-08916ae79cae.png)
-![image](https://user-images.githubusercontent.com/22818292/229720767-5de8569c-e985-47c4-9ada-b2f37077d961.png)
-![image](https://user-images.githubusercontent.com/22818292/229721220-25eb1958-91f2-44e6-bf14-1c402deb206f.png)
+![image](https://user-images.githubusercontent.com/22818292/230561536-4a0e6804-dcb2-4a94-ae42-a139ef0cf6d7.png)
 <br/>
 <br/>
 
