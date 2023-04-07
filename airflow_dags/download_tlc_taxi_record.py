@@ -159,11 +159,11 @@ def fetch(url, **context):
                     system_args, f"Upload {upload_elapsed}s elapsed."))
 
             logger.info(set_system_log(
-                system_args, "Assembling Chunks started."))
+                system_args, "Assembling chunks started."))
             result = s3.complete_multipart_upload(
                 Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={'Parts': mpu_parts})
             logger.info(set_system_log(
-                system_args, "Assembling Chunks & Upload completed."))
+                system_args, "S3 upload completed."))
             logger.info(set_system_log(system_args, f"{result}"))
 
     logger.info(set_system_log(system_args, "Download & S3 upload completed."))
