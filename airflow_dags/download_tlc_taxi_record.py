@@ -17,6 +17,11 @@ class DBHandler(logging.StreamHandler):
         self.hook = MySqlHook.get_hook(conn_id="TLC_TAXI")
         self.conn = self.hook.get_conn()
         self.cursor = self.conn.cursor()
+        self.default_log = {}
+
+    def set_default_log(self, default_log):
+        self.default_log = default_log
+        print(self.default_log)
 
     def emit(self, record):
         if record:
@@ -85,6 +90,7 @@ def make_dynamic_url(db, num, **context):
 
 @task
 def fetch(url, **context):
+    # set logger
     formatter = logging.Formatter("%(levelname)s - %(message)s")
     logger = logging.getLogger("dataset")
     logger.setLevel(logging.INFO)
@@ -92,8 +98,6 @@ def fetch(url, **context):
     dbhandler = DBHandler()
     dbhandler.setFormatter(formatter)
     logger.addHandler(dbhandler)
-
-    downup_start = time.time()
 
     file_name = url.split("/")[-1]
     year = file_name.split("-")[0].split("_")[-1]
@@ -113,6 +117,8 @@ def fetch(url, **context):
     for key, value in context.items():
         if key in ('dag', 'run_id', 'ti', 'logical_date'):
             system_args[key] = value
+
+    dbhandler.set_default_log(system_args)
 
     # download dataset
     logger.info(set_system_log(system_args, f"{url}"))
