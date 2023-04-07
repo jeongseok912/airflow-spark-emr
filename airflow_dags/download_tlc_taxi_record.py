@@ -41,8 +41,7 @@ def set_system_log(default_log, msg):
 ################### Task functions ###################
 
 @task
-def get_latest_dataset_id():
-    db = DBHandler()
+def get_latest_dataset_id(db):
     id = db.select("""
         SELECT
             MAX(dataset_id)
@@ -60,8 +59,7 @@ def get_latest_dataset_id():
 
 
 @task
-def make_dynamic_url(num, **context):
-    db = DBHandler()
+def make_dynamic_url(db, num, **context):
     id = context['ti'].xcom_pull(task_ids='get_latest_dataset_id')
     start = 0
     end = 0
@@ -86,12 +84,12 @@ def make_dynamic_url(num, **context):
 
 
 @task
-def fetch(url, **context):
+def fetch(dbhandler, url, **context):
     formatter = logging.Formatter("%(levelname)s - %(message)s")
     logger = logging.getLogger("dataset")
     logger.setLevel(logging.INFO)
 
-    dbhandler = DBHandler()
+    # dbhandler = DBHandler()
     dbhandler.setFormatter(formatter)
     logger.addHandler(dbhandler)
 
@@ -183,10 +181,11 @@ with DAG(
     catchup=True,
     tags=["tlc taxi record"]
 ) as dag:
+    db = DBHandler()
 
-    get_latest_dataset_id = get_latest_dataset_id()
-    get_urls = make_dynamic_url(num=2)
+    get_latest_dataset_id = get_latest_dataset_id(db)
+    get_urls = make_dynamic_url(db, num=2)
 
     get_latest_dataset_id >> get_urls
 
-    fetch.expand(url=get_urls)
+    fetch.expand(db, url=get_urls)
