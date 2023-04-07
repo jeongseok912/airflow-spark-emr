@@ -147,7 +147,7 @@ def fetch(url, **context):
 
                 part = s3.upload_part(
                     Body=chunk, Bucket=bucket, Key=key, UploadId=mpu_id, PartNumber=i)
-                part_dict = {'PartNumber': i, 'ETag': part['ETag']}
+                part_dict = {"PartNumber": i, "ETag": part["ETag"]}
                 mpu_parts.append(part_dict)
                 logger.info(set_system_log(system_args, f"{part_dict}"))
 
@@ -161,7 +161,7 @@ def fetch(url, **context):
             logger.info(set_system_log(
                 system_args, "Assembling chunks started."))
             result = s3.complete_multipart_upload(
-                Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={'Parts': mpu_parts})
+                Bucket=bucket, Key=key, UploadId=mpu_id, MultipartUpload={"Parts": mpu_parts})
             logger.info(set_system_log(
                 system_args, "S3 upload completed."))
             logger.info(set_system_log(system_args, f"{result}"))
