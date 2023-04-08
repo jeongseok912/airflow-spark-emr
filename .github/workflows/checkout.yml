@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: pwd
         run: pwd
+      - name: list directory
+        run: ls -al
       - name: deploy spark scripts to s3 
-        run: aws s3 sync --delete --region ap-northeast-2 spark_scripts s3://tlc-taxi/scripts/
+        run: aws s3 sync --delete --region ap-northeast-2 ./spark_scripts s3://tlc-taxi/scripts/
       
