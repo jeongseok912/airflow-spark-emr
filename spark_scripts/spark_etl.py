@@ -70,7 +70,7 @@ def get_market_share_data(input_df, output):
         .withColumn('share', round(col('count') / sum('count').over(sumWindowSpec) * 100, 2))\
         .sort('year_month', 'Company')
 
-    share_df.write.coalesce(1).option('header', 'True').mode(
+    share_df.coalesce(1).write.option('header', 'True').mode(
         'overwrite').csv(f'{output}/market_share')
 
 
