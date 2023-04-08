@@ -11,7 +11,7 @@ def process_data(spark, src):
     for file_name in list:
         year_months = file_name.split('_')[-1].replace('-', '')[:6]
     '''
-    year_month = ['201902', '201903']
+    # year_month = ['201902', '201903']
 
     df = spark.read.parquet(src)
 
@@ -26,7 +26,6 @@ def process_data(spark, src):
         .withColumn('Date', to_date(split(col('request_datetime'), ' ')[0]))\
         .withColumn('year_month', date_format(col('request_datetime'), 'yyyyMM'))\
         .drop(*cols)\
-        .filter(col('year_month').isin(year_month))\
         .select(
             'Company',
             'Date',
@@ -36,6 +35,7 @@ def process_data(spark, src):
             'request_datetime',
             'on_scene_datetime'
     )
+    # .filter(col('year_month').isin(year_month))\
     return base_df
 
 
@@ -52,14 +52,14 @@ def get_elapsed_data(input_df, output):
         'DOLocationID',
         'elapsed(m)'
     )
-    elapsed_for_export_df.write.option('header', 'True').mode(
+    elapsed_for_export_df.coalesce(1).write.option('header', 'True').mode(
         'overwrite').csv(f'{output}/elapsed')
 
     # 경쟁사 간 월별 평균 소요시간 추이 분석을 위한 데이터
     avg_elapsed_by_month_df = elapsed_df.groupby('Company', 'year_month')\
         .avg('elapsed(m)')\
         .select('Company', 'year_month', round('avg(elapsed(m))').alias('elapsed(m)'))
-    avg_elapsed_by_month_df.write.option('header', 'True').mode('overwrite').csv(
+    avg_elapsed_by_month_df.coalesce(1).write.option('header', 'True').mode('overwrite').csv(
         f'{output}/avg_elapsed_by_month')
 
 
@@ -70,7 +70,7 @@ def get_market_share_data(input_df, output):
         .withColumn('share', round(col('count') / sum('count').over(sumWindowSpec) * 100, 2))\
         .sort('year_month', 'Company')
 
-    share_df.write.option('header', 'True').mode(
+    share_df.write.coalesce(1).option('header', 'True').mode(
         'overwrite').csv(f'{output}/market_share')
 
 
@@ -107,7 +107,7 @@ def get_popular_location_data(input_df, output):
         )\
         .sort('year_month', desc('rank_var'))
 
-    popular_location_df.write.option('header', 'True').mode('overwrite').csv(
+    popular_location_df.coalesce(1).write.option('header', 'True').mode('overwrite').csv(
         f'{output}/popular_location')
 
 
