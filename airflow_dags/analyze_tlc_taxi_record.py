@@ -31,9 +31,9 @@ SPARK_STEPS = [
 
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
-    "LogUri": "s3://airflow--log/emr-log/",
+    "LogUri": "s3://emr--log/",
     "ReleaseLabel": "emr-6.10.0",
-    "Applications": [{"Name": "Spark"}, {"Name": "JupyterEnterpriseGateway"}],
+    "Applications": [{"Name": "Spark"}],
     "Instances": {
         "EmrManagedMasterSecurityGroup": "sg-0a8997b0ae4e90d07",
         "EmrManagedSlaveSecurityGroup": "sg-055cef9cc6cc12658",
@@ -51,7 +51,7 @@ JOB_FLOW_OVERRIDES = {
                 "Name": "Core Node",
                 "Market": "ON_DEMAND",
                 "InstanceRole": "CORE",
-                "InstanceType": "c4.large",
+                "InstanceType": "m4.large",
                 "InstanceCount": 2
             }
         ],
