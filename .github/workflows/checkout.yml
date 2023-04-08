@@ -28,3 +28,11 @@ jobs:
         run: rm -rf /home/ubuntu/airflow/dags
       - name: copy DAGs
         run: cp -r $(pwd)/airflow_dags /home/ubuntu/airflow/dags
+  deploy-to-s3:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_ID }}
+    run:
+      aws s3 sync --delete --region ap-northeast-2 spark_scripts s3://tlc-taxi/scripts/
+      
