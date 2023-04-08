@@ -18,7 +18,7 @@ SPARK_STEPS = [
                 "spark-submit",
                 "--deploy-mode",
                 "cluster",
-                "https://github.com/jeongseok912/airflow-spark-emr/blob/main/spark_scripts/spark_etl.py",
+                "s3://tlc-taxi/scripts/spark_etl.py",
                 "--src",
                 "s3://tlc-taxi/source/2019/",
                 "--output",
@@ -44,14 +44,14 @@ JOB_FLOW_OVERRIDES = {
                 "Name": "Primary node",
                 "Market": "ON_DEMAND",
                 "InstanceRole": "MASTER",
-                "InstanceType": "m5.xlarge",
+                "InstanceType": "m4.large",
                 "InstanceCount": 1,
             },
             {
                 "Name": "Core Node",
                 "Market": "ON_DEMAND",
                 "InstanceRole": "CORE",
-                "InstanceType": "m5.xlarge",
+                "InstanceType": "c4.large",
                 "InstanceCount": 2
             }
         ],
