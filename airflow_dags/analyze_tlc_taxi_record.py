@@ -4,12 +4,9 @@ from airflow import DAG
 from airflow.providers.amazon.aws.operators.emr import (
     EmrAddStepsOperator,
     EmrCreateJobFlowOperator,
-    EmrModifyClusterOperator,
-    EmrTerminateJobFlowOperator,
-    EmrStartNotebookExecutionOperator,
-    EmrStopNotebookExecutionOperator
+    EmrTerminateJobFlowOperator
 )
-from airflow.providers.amazon.aws.sensors.emr import EmrNotebookExecutionSensor
+from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor
 
 SPARK_STEPS = [
     {
@@ -21,7 +18,7 @@ SPARK_STEPS = [
                 "spark-submit",
                 "--deploy-mode",
                 "cluster",
-                "s3://tlc-taxi/scripts/spark_etl.py",
+                "https://github.com/jeongseok912/airflow-spark-emr/blob/main/spark_scripts/spark_etl.py",
                 "--src",
                 "s3://tlc-taxi/source/2019/",
                 "--output",
@@ -84,22 +81,14 @@ with DAG(
         wait_for_completion=True,
     )
 
-    '''
-    start_execution = EmrStartNotebookExecutionOperator(
-        task_id="start_execution",
-        editor_id="e-1SFM5AFSW2P6SVEUKZAHMLZXU",
-        cluster_id="j-2VW9BK2ID9RMI",
-        relative_path="tlc-taxi-record.ipynb",
-        service_role="EMR_DefaultRole"
+    check_job_flow = EmrJobFlowSensor(
+        task_id="check_job_flow",
+        job_flow_id=create_job_flow.output
     )
 
-    wait_for_execution_start = EmrNotebookExecutionSensor(
-        task_id="wait_for_execution_start",
-        notebook_execution_id=start_execution.output,
-        target_states={"RUNNING"},
-        poke_interval=5
+    remove_cluster = EmrTerminateJobFlowOperator(
+        task_id="remove_cluster",
+        job_flow_id=create_job_flow.output
     )
-    '''
 
-# create_job_flow >> add_steps
-# create_job_flow >> start_execution >> wait_for_execution_start
+create_job_flow >> add_steps >> check_job_flow >> remove_cluster
