@@ -34,14 +34,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - name: chekcout Scripts
+      - name: checkout scripts
         uses: actions/checkout@v3
-      - name: pwd
-        run: pwd
-      - name: list directory
-        run: ls -al
-      - name: parent directory
-        run: cd .. & ls -al
       - name: deploy spark scripts to s3 
         run: aws s3 sync --delete --region ap-northeast-2 ./spark_scripts s3://tlc-taxi/scripts/
       
