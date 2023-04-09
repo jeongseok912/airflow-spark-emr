@@ -83,6 +83,12 @@ JOB_FLOW_OVERRIDES = {
             "Properties": {
                 "yarn.resourcemanager.am.max-attempts": "1"
             }
+        },
+        {
+            "Classification": "spark",
+            "Properites": {
+                "maximizeResourceAllocation": "true"
+            }
         }
     ]
 }
