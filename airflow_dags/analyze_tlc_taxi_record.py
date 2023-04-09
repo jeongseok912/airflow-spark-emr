@@ -81,7 +81,7 @@ JOB_FLOW_OVERRIDES = {
         {
             "Classification": "yarn-site",
             "Properties": {
-                "yarn.resourcemanager.am.max-attempts": 1
+                "yarn.resourcemanager.am.max-attempts": "1"
             }
         }
     ]
