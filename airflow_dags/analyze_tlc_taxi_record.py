@@ -76,7 +76,7 @@ JOB_FLOW_OVERRIDES = {
         "TerminationProtected": False
     },
     "JobFlowRole": "EMR_EC2_DefaultRole",
-    "ServiceRole": "AmazonEMRServicePolicy_v2"
+    "ServiceRole": "EMR_DefaultRole"
 }
 
 
