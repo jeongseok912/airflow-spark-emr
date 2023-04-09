@@ -37,7 +37,7 @@ SPARK_STEPS = [
                 "cluster",
                 "s3://tlc-taxi/scripts/analyze_data.py",
                 "--src",
-                "s3://tlc-taxi/source/preprocess/",
+                "s3://tlc-taxi/output/preprocess/",
                 "--output",
                 "s3://tlc-taxi/output/analyze/"
             ]
