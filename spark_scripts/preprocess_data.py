@@ -4,17 +4,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--src', type=str,
-                        help='S3 source', default='s3://tlc-taxi/source')
-    parser.add_argument('--output', type=str,
-                        help='S3 output', default='s3://tlc-taxi/output/preprocess')
-    args = parser.parse_args()
-
-    spark = SparkSession.builder.appName(
-        "PySpark - Preprocess TLC Taxi Record").getOrCreate()
-
+def preprocess_data(spark, src, output):
     '''
     year_months = []
     for file_name in list:
@@ -22,7 +12,7 @@ def main():
     '''
     # year_month = ['201902', '201903']
 
-    df = spark.read.parquet(args.src)
+    df = spark.read.parquet(src)
 
     # ML 학습용 데이터 및 평균 소요시간 추이 분석을 위한 기초 데이터
     cols = ('hvfhs_license_num', 'dispatching_base_num', 'originating_base_num', 'shared_request_flag',
@@ -47,7 +37,21 @@ def main():
     # .filter(col('year_month').isin(year_month))\
 
     base_df.coalesce(1).write.mode(
-        'overwrite').partitionBy('year_month').parquet(args.output)
+        'overwrite').partitionBy('year_month').parquet(output)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--src', type=str,
+                        help='S3 source', default='s3://tlc-taxi/source')
+    parser.add_argument('--output', type=str,
+                        help='S3 output', default='s3://tlc-taxi/output/preprocess')
+    args = parser.parse_args()
+
+    spark = SparkSession.builder.appName(
+        "PySpark - Preprocess TLC Taxi Record").getOrCreate()
+
+    preprocess_data(spark, src=args.src, output=args.output)
 
 
 if __name__ == "__main__":
