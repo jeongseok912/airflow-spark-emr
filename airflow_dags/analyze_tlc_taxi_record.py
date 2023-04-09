@@ -23,8 +23,6 @@ SPARK_STEPS = [
                 "s3://tlc-taxi/source/2019/",
                 "--output",
                 "s3://tlc-taxi/output/preprocess/",
-                "--conf",
-                "spark.yarn.maxAppAttempts=1"
             ]
         }
     },
@@ -42,8 +40,6 @@ SPARK_STEPS = [
                 "s3://tlc-taxi/output/preprocess/",
                 "--output",
                 "s3://tlc-taxi/output/analyze/",
-                "--conf",
-                "spark.yarn.maxAppAttempts=1"
             ]
         }
     },
@@ -80,7 +76,15 @@ JOB_FLOW_OVERRIDES = {
         "TerminationProtected": False
     },
     "JobFlowRole": "EMR_EC2_DefaultRole",
-    "ServiceRole": "EMR_DefaultRole"
+    "ServiceRole": "EMR_DefaultRole",
+    "Configurations": [
+        {
+            "Classification": "yarn-site",
+            "Properties": {
+                "yarn.resourcemanager.am.max-attempts", 1
+            }
+        }
+    ]
 }
 
 
