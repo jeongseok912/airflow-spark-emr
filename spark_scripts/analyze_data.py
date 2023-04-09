@@ -5,9 +5,9 @@ from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 
 
-def get_elapsed_data(input_df, output):
-    elapsed_df = input_df\
-        .na.drop(subset=['request_datetime', 'on_scene_datetime'])\
+def get_elapsed_data(spark, src, output):
+    df = spark.read.parquet(src)
+    elapsed_df = df.na.drop(subset=['request_datetime', 'on_scene_datetime'])\
         .withColumn('elapsed(m)', round((unix_timestamp('on_scene_datetime') - unix_timestamp('request_datetime')) / 60))
 
     # 도착예정시간(ETA) 예측을 위한 ML 학습 데이터
@@ -29,10 +29,11 @@ def get_elapsed_data(input_df, output):
         f'{output}/avg_elapsed_by_month')
 
 
-def get_market_share_data(input_df, output):
+def get_market_share_data(spark, src, output):
     sumWindowSpec = Window.partitionBy('year_month')
 
-    share_df = input_df.groupby('Company', 'year_month').count()\
+    df = spark.read.parquet(src)
+    share_df = df.groupby('Company', 'year_month').count()\
         .withColumn('share', round(col('count') / sum('count').over(sumWindowSpec) * 100, 2))\
         .sort('year_month', 'Company')
 
@@ -40,11 +41,13 @@ def get_market_share_data(input_df, output):
         'overwrite').csv(f'{output}/market_share')
 
 
-def get_popular_location_data(input_df, output):
+def get_popular_location_data(spark, src, output):
     sumWindowSpec = Window.partitionBy('year_month')
     rankWindowSpec = Window.partitionBy('year_month').orderBy(desc('count'))
 
-    pu_location_df = input_df.groupby('year_month', 'PULocationID').count()\
+    df = spark.read.parquet(src)
+
+    pu_location_df = df.groupby('year_month', 'PULocationID').count()\
         .withColumn('share', round(col('count') / sum('count').over(sumWindowSpec) * 100, 2))\
         .withColumn('rank', dense_rank().over(rankWindowSpec))\
         .sort('year_month', desc(col('count')))
@@ -89,13 +92,13 @@ def main():
         "PySpark - Analyze preprocessed TLC Taxi Record").getOrCreate()
 
     # 소요시간 분석
-    get_elapsed_data(input_df=args.src, output=args.output)
+    get_elapsed_data(spark, src=args.src, output=args.output)
 
     # 시장 점유율 분석
-    get_market_share_data(input_df=args.src, output=args.output)
+    get_market_share_data(spark, src=args.src, output=args.output)
 
     # 인기 지역 분석
-    get_popular_location_data(input_df=args.src, output=args.output)
+    get_popular_location_data(spark, src=args.src, output=args.output)
 
 
 if __name__ == "__main__":
