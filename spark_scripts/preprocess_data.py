@@ -46,8 +46,8 @@ def main():
     )
     # .filter(col('year_month').isin(year_month))\
 
-    base_df.write.mode(
-        'overwrite').coalesce(1).partitionBy('year_month').parquet(args.output)
+    base_df.coalesce(1).write.mode(
+        'overwrite').partitionBy('year_month').parquet(args.output)
 
 
 if __name__ == "__main__":
