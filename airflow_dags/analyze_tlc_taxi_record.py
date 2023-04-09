@@ -10,7 +10,7 @@ from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor
 
 SPARK_STEPS = [
     {
-        "Name": "Analyze TLC Taxi Record",
+        "Name": "Preprocess TLC Taxi Record",
         "ActionOnFailure": "CONTINUE",
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
@@ -22,10 +22,27 @@ SPARK_STEPS = [
                 "--src",
                 "s3://tlc-taxi/source/2019/",
                 "--output",
-                "s3://tlc-taxi/output/2019/"
+                "s3://tlc-taxi/output/preprocess/"
             ]
         }
-    }
+    },
+    {
+        "Name": "Analyze preprocessed TLC Taxi Record",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                "s3://tlc-taxi/scripts/spark_etl.py",
+                "--src",
+                "s3://tlc-taxi/source/preprocess/",
+                "--output",
+                "s3://tlc-taxi/output/analyze/"
+            ]
+        }
+    },
 ]
 
 
@@ -44,21 +61,21 @@ JOB_FLOW_OVERRIDES = {
                 "Name": "Primary node",
                 "Market": "ON_DEMAND",
                 "InstanceRole": "MASTER",
-                "InstanceType": "m4.large",
+                "InstanceType": "m5.xlarge",
                 "InstanceCount": 1,
             },
             {
                 "Name": "Core Node",
                 "Market": "ON_DEMAND",
                 "InstanceRole": "CORE",
-                "InstanceType": "m4.large",
+                "InstanceType": "m5.xlarge",
                 "InstanceCount": 2
             }
         ],
         "KeepJobFlowAliveWhenNoSteps": True,
         "TerminationProtected": False
     },
-    "JobFlowRole": "EMR_EC2_DefaultRole",
+    "JobFlowRole": "AmazonEMRServicePolicy_v2",
     "ServiceRole": "EMR_DefaultRole"
 }
 
