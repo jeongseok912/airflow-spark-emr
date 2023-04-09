@@ -22,7 +22,9 @@ SPARK_STEPS = [
                 "--src",
                 "s3://tlc-taxi/source/2019/",
                 "--output",
-                "s3://tlc-taxi/output/preprocess/"
+                "s3://tlc-taxi/output/preprocess/",
+                "--conf",
+                "spark.yarn.maxAppAttempts=1"
             ]
         }
     },
@@ -39,7 +41,9 @@ SPARK_STEPS = [
                 "--src",
                 "s3://tlc-taxi/output/preprocess/",
                 "--output",
-                "s3://tlc-taxi/output/analyze/"
+                "s3://tlc-taxi/output/analyze/",
+                "--conf",
+                "spark.yarn.maxAppAttempts=1"
             ]
         }
     },
