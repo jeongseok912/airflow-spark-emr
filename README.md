@@ -261,7 +261,9 @@ Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수
 ### S3
 TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다. Spark에서는 연도 파티션 단위로 처리할 예정이다.
 
-데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. csv로 치면 수 백 `GB` ~ `TB`을 될 것이다.
+데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. 
+
+parquet는 압축률이 좋기 때문에 csv로 치면 쵯 수 십 `GB` 될 것이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230821333-6a7f2d59-6485-479a-ad03-b06c2102954e.png)
 
@@ -273,16 +275,21 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 
 **download_tlc_taxi_record**
 ```python
-    get_latest_dataset_id = get_latest_dataset_id()
-    get_urls = get_url(num=2)
+    get_latest_dataset_id = get_latest_dataset_id() # 1
+    get_urls = get_url(num=2) # 2
 
     get_latest_dataset_id >> get_urls
 
-    fetch.expand(url=get_urls)
+    fetch.expand(url=get_urls) # 3
 ```
 
 1. `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
 2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다. 이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/> 
-이 때, 몇 개의 데이터셋을 수집할 지 지정한다. Default로 2개의 데이터셋을 수집하도록 해놓았다.<br/>
-예를들어 Default 값대로 DAG가 스케줄에 의해 처리된다면, TLC Taxi Record가 월별 데이터를 제공하기 때문에 2019-02, 2019-03 데이터가 수집되고, 다음 실행 때는 2019-04, 2019-05 데이터가 수집된다.
+`num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.<br/>
+예를들어 `num=2`로 설정된 뒤 DAG가 스케줄에 의해 처리된다면, TLC Taxi Record가 월별 데이터를 제공하기 때문에 2019-02, 2019-03 데이터가 수집되고, 다음 실행 때는 2019-04, 2019-05 데이터가 수집된다.
+3. Dynamic Task Mapping 개념을 이용한 것으로, Runtime 때 Task 수를 생성한다.<br/>
+데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.<br/>
+예를들면 2019-02, 2019-03 데이터셋을 수집할 때, 순차적으로 처리되지 않고 각 데이터셋은 각 Worker에 Task로 분배되어서 병렬로 수집한다.<br/>
+![image](https://user-images.githubusercontent.com/22818292/230826943-c962530f-3939-46bf-8cf7-87e075bf545e.png)
+
 
