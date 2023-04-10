@@ -107,7 +107,9 @@ def make_dynamic_step_definition(**context):
 
 
 def get_step(**context):
-    print(context['ti'].xcom_pull(task_ids='make_dynamic_step_definition'))
+    steps = context['ti'].xcom_pull(task_ids='make_dynamic_step_definition')
+
+    return steps[0]
 
     # print(steps)
     # print(type(steps))
