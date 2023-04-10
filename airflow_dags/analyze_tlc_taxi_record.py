@@ -20,8 +20,10 @@ script = Variable.get("AWS_S3_SCRIPT")
 
 def get_latest_year_partition():
     s3 = S3Hook('aws_default')
+    prefix = src + '/'
+
     prefixes = s3.list_prefixes(
-        bucket_name=bucket, prefix=src + '/', delimiter='/')
+        bucket_name=bucket, prefix=prefix, delimiter='/')
     latest_year = max([int(prefix.split('/')[-2]) for prefix in prefixes])
 
     return latest_year
