@@ -4,6 +4,7 @@ import json
 from airflow import DAG
 from airflow.models import Variable
 from airflow.models.baseoperator import chain
+from airflow.utils.task_group import TaskGroup
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.operators.emr import (
     EmrAddStepsOperator,
@@ -191,53 +192,57 @@ with DAG(
         job_flow_overrides=JOB_FLOW_OVERRIDES
     )
 
-    make_preprocess_data_definition = PythonOperator(
-        task_id="make_preprocess_data_definition",
-        python_callable=make_preprocess_data_definition
-    )
+    with TaskGroup('step0', tooltip="Task for Preprocess Data") as step0:
+        make_preprocess_data_definition = PythonOperator(
+            task_id="make_preprocess_data_definition",
+            python_callable=make_preprocess_data_definition
+        )
 
-    preprocess_data = EmrAddStepsOperator(
-        task_id="preprocess_data",
-        job_flow_id=create_job_flow.output,
-        steps=make_preprocess_data_definition.output,
-        wait_for_completion=True,
-    )
+        preprocess_data = EmrAddStepsOperator(
+            task_id="preprocess_data",
+            job_flow_id=create_job_flow.output,
+            steps=make_preprocess_data_definition.output,
+            wait_for_completion=True,
+        )
 
-    make_analyze_elapsed_time_definition = PythonOperator(
-        task_id="make_analyze_elapsed_time_definition",
-        python_callable=make_analyze_elapsed_time_definition
-    )
+    with TaskGroup('step1', tooltip="Task for Elapsed Time") as step1:
+        make_analyze_elapsed_time_definition = PythonOperator(
+            task_id="make_analyze_elapsed_time_definition",
+            python_callable=make_analyze_elapsed_time_definition
+        )
 
-    analyze_elapsed_time = EmrAddStepsOperator(
-        task_id="analyze_elapsed_time",
-        job_flow_id=create_job_flow.output,
-        steps=make_analyze_elapsed_time_definition.output,
-        wait_for_completion=True,
-    )
+        analyze_elapsed_time = EmrAddStepsOperator(
+            task_id="analyze_elapsed_time",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_elapsed_time_definition.output,
+            wait_for_completion=True,
+        )
 
-    make_analyze_market_share_definition = PythonOperator(
-        task_id="make_analyze_market_share_definition",
-        python_callable=make_analyze_market_share_definition
-    )
+    with TaskGroup('step2', tooltip="Task for Market Share") as step2:
+        make_analyze_market_share_definition = PythonOperator(
+            task_id="make_analyze_market_share_definition",
+            python_callable=make_analyze_market_share_definition
+        )
 
-    analyze_market_share = EmrAddStepsOperator(
-        task_id="analyze_market_share",
-        job_flow_id=create_job_flow.output,
-        steps=make_analyze_market_share_definition.output,
-        wait_for_completion=True,
-    )
+        analyze_market_share = EmrAddStepsOperator(
+            task_id="analyze_market_share",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_market_share_definition.output,
+            wait_for_completion=True,
+        )
 
-    make_analyze_popular_location_definition = PythonOperator(
-        task_id="make_analyze_popular_location_definition",
-        python_callable=make_analyze_popular_location_definition
-    )
+    with TaskGroup('step3', tooltip="Task for Popular Location") as step3:
+        make_analyze_popular_location_definition = PythonOperator(
+            task_id="make_analyze_popular_location_definition",
+            python_callable=make_analyze_popular_location_definition
+        )
 
-    analyze_popular_location = EmrAddStepsOperator(
-        task_id="analyze_popular_location",
-        job_flow_id=create_job_flow.output,
-        steps=make_analyze_popular_location_definition.output,
-        wait_for_completion=True,
-    )
+        analyze_popular_location = EmrAddStepsOperator(
+            task_id="analyze_popular_location",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_popular_location_definition.output,
+            wait_for_completion=True,
+        )
 
     check_job_flow = EmrJobFlowSensor(
         task_id="check_job_flow",
@@ -253,11 +258,8 @@ with DAG(
 chain(
     get_latest_year_partition,
     create_job_flow,
-    make_preprocess_data_definition,
-    preprocess_data,
-    [make_analyze_elapsed_time_definition, make_analyze_market_share_definition,
-        make_analyze_popular_location_definition],
-    [analyze_elapsed_time, analyze_market_share, analyze_popular_location],
+    step0,
+    [step1, step2, step3],
     check_job_flow,
     remove_cluster
 )
