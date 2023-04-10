@@ -38,7 +38,7 @@ def make_preprocess_data_definition(**context):
     STEP = [
         {
             "Name": "Preprocess TLC Taxi Record",
-            "ActionOnFailure": "TERMINATE_CLUSTER",
+            "ActionOnFailure": "CONTINUE",
             "HadoopJarStep": {
                 "Jar": "command-runner.jar",
                 "Args": [
