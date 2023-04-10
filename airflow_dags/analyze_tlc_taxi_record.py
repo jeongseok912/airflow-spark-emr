@@ -52,7 +52,7 @@ def make_dynamic_step_definition(**context):
             }
         },
         {
-            "Name": "Analyze preprocessed TLC Taxi Record",
+            "Name": "Analyze Elapsed Time",
             "ActionOnFailure": "CONTINUE",
             "HadoopJarStep": {
                 "Jar": "command-runner.jar",
@@ -60,7 +60,41 @@ def make_dynamic_step_definition(**context):
                     "spark-submit",
                     "--deploy-mode",
                     "cluster",
-                    f"s3://{bucket}/{script}/analyze_data.py",
+                    f"s3://{bucket}/{script}/analyze_elapsed_time.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        },
+        {
+            "Name": "Analyze Market Share",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_market_share.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        },
+        {
+            "Name": "Analyze Popular Location",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_popular_location.py",
                     "--src",
                     f"s3://{bucket}/{output}/preprocess/{latest_year}/",
                     "--output",
@@ -142,10 +176,31 @@ with DAG(
         job_flow_overrides=JOB_FLOW_OVERRIDES
     )
 
-    add_steps = EmrAddStepsOperator(
-        task_id="add_steps",
+    preprocess_data = EmrAddStepsOperator(
+        task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output,
+        steps=make_dynamic_step_definition.output[0],
+        wait_for_completion=True,
+    )
+
+    analyze_elapsed_time = EmrAddStepsOperator(
+        task_id="analyze_elapsed_time",
+        job_flow_id=create_job_flow.output,
+        steps=make_dynamic_step_definition.output[1],
+        wait_for_completion=True,
+    )
+
+    analyze_market_share = EmrAddStepsOperator(
+        task_id="analyze_market_share",
+        job_flow_id=create_job_flow.output,
+        steps=make_dynamic_step_definition.output[2],
+        wait_for_completion=True,
+    )
+
+    analyze_popular_location = EmrAddStepsOperator(
+        task_id="analyze_popular_location",
+        job_flow_id=create_job_flow.output,
+        steps=make_dynamic_step_definition.output[3],
         wait_for_completion=True,
     )
 
@@ -160,4 +215,7 @@ with DAG(
         job_flow_id=create_job_flow.output
     )
 
-get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
+get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> preprocess_data
+
+preprocess_data >> [analyze_elapsed_time, analyze_market_share,
+                    analyze_popular_location] >> check_job_flow >> remove_cluster
