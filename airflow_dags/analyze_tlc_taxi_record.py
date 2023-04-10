@@ -12,60 +12,63 @@ from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 
-def get_latest_year_partition():
-    bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
-    prefix = Variable.get("AWS_S3_SOURCE")
+bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
+src = Variable.get("AWS_S3_SOURCE")
+output = Variable.get("AWS_S3_OUTPUT")
+script = Variable.get("AWS_S3_SCRIPT")
 
+
+def get_latest_year_partition():
     s3 = S3Hook('aws_default')
     prefixes = s3.list_prefixes(
-        bucket_name=bucket, prefix=prefix, delimiter='/')
+        bucket_name=bucket, prefix=src + '/', delimiter='/')
     latest_year = max([int(prefix.split('/')[-2]) for prefix in prefixes])
 
     return latest_year
 
 
-latest_year = get_latest_year_partition()
+def make_dynamic_step_definition(**context):
+    latest_year = context["task_instance"].xcom_pull(
+        task_ids='get_latest_year_partition')
 
-SPARK_STEPS = [
-    {
-        "Name": "Preprocess TLC Taxi Record",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                "s3://tlc-taxi/scripts/preprocess_data.py",
-                "--src",
-                f"s3://tlc-taxi/source/{latest_year}/",
-                "--output",
-                "s3://tlc-taxi/output/preprocess/",
-            ]
-        }
-    },
-    {
-        "Name": "Analyze preprocessed TLC Taxi Record",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                "s3://tlc-taxi/scripts/analyze_data.py",
-                "--src",
-                "s3://tlc-taxi/output/preprocess/",
-                "--output",
-                "s3://tlc-taxi/output/analyze/",
-            ]
-        }
-    },
-]
+    SPARK_STEPS = [
+        {
+            "Name": "Preprocess TLC Taxi Record",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/preprocess_data.py",
+                    "--src",
+                    f"s3://{bucket}/{src}/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/preprocess/",
+                ]
+            }
+        },
+        {
+            "Name": "Analyze preprocessed TLC Taxi Record",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_data.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/",
+                ]
+            }
+        },
+    ]
 
-
-def p():
-    print(SPARK_STEPS)
+    return SPARK_STEPS
 
 
 JOB_FLOW_OVERRIDES = {
@@ -124,7 +127,12 @@ with DAG(
 
     get_latest_year_partition = PythonOperator(
         task_id="get_latest_year_partition",
-        python_callable=p
+        python_callable=get_latest_year_partition
+    )
+
+    make_dynamic_step_definition = PythonOperator(
+        task_id="make_dynamic_step_definition"
+        python_callable=make_dynamic_step_definition
     )
 '''
     create_job_flow = EmrCreateJobFlowOperator(
@@ -149,5 +157,6 @@ with DAG(
         job_flow_id=create_job_flow.output
     )
 
-get_latest_year_partition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
+get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
 '''
+get_latest_year_partition >> make_dynamic_step_definition
