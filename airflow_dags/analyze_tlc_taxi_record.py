@@ -17,12 +17,11 @@ def get_latest_year_partition():
     prefix = "source/"
 
     s3 = S3Hook('aws_default')
-
-    r3 = s3.select_key(bucket_name=bucket, key=prefix,
-                       expression='SELECT * FROM S3Object', expression_type='SQL')
-    print(f"r3 : {r3}")
-    result = s3.list_prefixes(bucket_name=bucket, prefix=prefix, delimiter='/')
-    print(f"result : {result}")
+    prefixes = s3.list_prefixes(
+        bucket_name=bucket, prefix=prefix, delimiter='/')
+    print(f"result : {prefixes}")
+    print([prefix.spit('/') for prefix in prefixes])
+    print(prefixes.split('/'))
 
 
 SPARK_STEPS = [
