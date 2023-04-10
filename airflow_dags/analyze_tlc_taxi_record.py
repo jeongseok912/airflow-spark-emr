@@ -107,6 +107,10 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
+def get_step(steps, i):
+    return dict(steps)[i]
+
+
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
     "LogUri": "s3://emr--log/",
@@ -179,28 +183,28 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output[0],
+        steps=get_step(make_dynamic_step_definition.output, 0),
         wait_for_completion=True,
     )
 
     analyze_elapsed_time = EmrAddStepsOperator(
         task_id="analyze_elapsed_time",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output[1],
+        steps=get_step(make_dynamic_step_definition.output, 1),
         wait_for_completion=True,
     )
 
     analyze_market_share = EmrAddStepsOperator(
         task_id="analyze_market_share",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output[2],
+        steps=get_step(make_dynamic_step_definition.output, 2),
         wait_for_completion=True,
     )
 
     analyze_popular_location = EmrAddStepsOperator(
         task_id="analyze_popular_location",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output[3],
+        steps=get_step(make_dynamic_step_definition.output, 3),
         wait_for_completion=True,
     )
 
