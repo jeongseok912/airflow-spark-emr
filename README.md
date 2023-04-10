@@ -49,35 +49,64 @@ TLC Taxi Record 데이터셋 중 우버(Uber), 리프트(Lyft) 같은 차량공�
 # 아키텍처
 ![image](https://user-images.githubusercontent.com/22818292/229718534-f9494483-ac64-4ffd-bd4f-b4f82f6d6e14.png)
 
-## 서비스
+## 서비스 및 용도
 
-### AWS
+### AWS - RDS (MySQL)
+Airflow 메타데이터 DB 및 수집할 데이터셋에 대한 메타데이터 제공, 커스텀 로깅 용도
 
-- **RDS (MySQL)** : 수집할 데이터셋에 대한 메타데이터 제공, 수집 시 로깅 용도<br/>
-RDS는 다양한 DB 엔진을 지원하며, 인스턴스 유지 관리에 소요되는 시간을 줄여주고, 읽기 전용 복제본으로 트래픽 부하를 줄이는 등 다양한 이점이 있어 많이 사용한다.<br/>
+RDS는 다양한 DB 엔진을 지원하며, 인스턴스 유지 관리에 소요되는 시간을 줄여주고, 읽기 전용 복제본으로 트래픽 부하를 줄이는 등 다양한 이점이 있어 많이 사용한다.
 
-- **S3** : 수집한 데이터셋 저장, 가공한 데이터셋 저장 용도<br/>
+Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수집 시 별도로 로그를 저장하는 `tlc_taxi`라는 DB를 두었다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822983-ddcf92a2-4770-4607-a49f-d03c6e4810e3.png)
+
+**`dataset_meta`**
+
+가져올 데이터셋에 대한 ID를 부여한 Master 테이블이다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822811-b91c61b0-8455-41f5-99a5-56f9091bd286.png)
+
+**`dataset_log`**
+
+데이터셋 수집 시 Custom log를 저장하는 테이블이다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822649-95017a11-3ae5-40b7-a0a5-d928f1ba8e52.png)
+
+<br/>
+
+### AWS - S3
+수집한 데이터셋 저장, 가공한 데이터셋 저장 용도
+
 데이터 및 요청을 파이셔닝하는데 유용하며, DataLake로 활용을 많이 한다.
 
-- **EC2** : Airflow Multi Node Cluster 구성을 위해 사용<br/>
-  Airflow 관리형 서비스인 MWAA를 쓸 수 있지만, Airflow Cluster에 대한 이해도를 높이기 위해 여러 대의 EC2로 날 것으로 구성한다.
+
+### AWS - EC2
+Airflow Multi Node Cluster 구성을 위해 사용
+
+Airflow 관리형 서비스인 MWAA를 쓸 수 있지만, Airflow Cluster에 대한 이해도를 높이기 위해 여러 대의 EC2로 날 것으로 구성한다.
   
-- **EMR** : Spark 사용 목적<br/>
-  Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. EMR은 서비스 하나로 Spark, Hadoop, YARN, Jupyter Notebook 같은 다양한 Application을 간편하게 구성할 수 있도록 도와준다.<br/> 
-  또한 Application에서 제공하는 모니터링 UI를 제공하고, S3에 로깅도 해주기 때문에 debugging도 용이하다. 
+### AWS - EMR
+Spark 사용 목적
+
+Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. EMR은 서비스 하나로 Spark, Hadoop, YARN, Jupyter Notebook 같은 다양한 Application을 간편하게 구성할 수 있도록 도와준다.
+
+또한 Application에서 제공하는 모니터링 UI를 제공하고, S3에 로깅도 해주기 때문에 debugging도 용이하다. 
 
 ### Airflow
-프로젝트 시나리오의 경우 크게 용도 및 목적을 2가지 프로세스로 분리 및 정의하는데, 이 프로세스를 편하게 스케줄링 및 트리거하기 위해 사용한다.<br/>
-이 2개의 프로세스는 각각의 DAG 파이프라인을 말한다.
+데이터 수집 프로세스와 분석 프로세스에 대한 Workflow 정의 및 스케줄링에 사용한다.
+
+이 각 프로세스는 각 DAG와 매핑된다.
+
 - 데이터 수집 프로세스 = 데이터 수집 DAG
-- 데이터 분석 프로세스 = 데이터 가공 및 처리 DAG
+- 데이터 분석 프로세스 = 데이터 가공 및 분석 DAG
 
 ### Spark
-S3에 적재된 대량의 데이터셋을 분석하고 가공하는데 사용한다.<br/>
+S3에 적재된 대량의 데이터셋을 분석하고 가공하는데 사용한다.
+
 MPP DB인 Redshift에 저장하고 시각화까지 하는 파이프라인을 만들 수 있지만, 프로젝트의 범위를 S3에 추출하는 것으로 제한한다.
 
 ### GitHub
-Airflow DAG에 대한 저장소, 버전관리 및 배포를 위해 사용한다.
+Airflow DAG, Spark script에 대한 저장소 및 배포 자동화를 위해 사용한다.
 <br/>
 <br/>
 <br/>
@@ -93,7 +122,7 @@ Airflow DAG에 대한 저장소, 버전관리 및 배포를 위해 사용한다.
 2. 수집한 데이터셋을 S3에 저장한다.
 
 ### 데이터 분석 프로세스
-1. 데이터셋 수집 프로세스가 완료되었는지 체크 후, Airflow EMR Cluster를 생성하고 EMR의 Spark submit Step을 실행한다.
+1. EMR Cluster를 생성하고 EMR의 Spark submit Step을 실행한다.
 2. 실행된 Spark Application은 데이터 수집 프로세스에서 S3에 저장한 데이터셋을 Source로 읽어들여 분석하고 가공한다.
 3. 가공된 데이터셋을 S3에 저장한다.
 <br/>
@@ -239,41 +268,15 @@ airflow-spark-emr
 
 # 전체적인 흐름 설명
 
-## 데이터셋 메타, 로그 DB
-Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수집 시 별도로 로그를 저장하는 `tlc_taxi`라는 DB를 두었다.
+## 데이터 수집 프로세스
 
-![image](https://user-images.githubusercontent.com/22818292/230822983-ddcf92a2-4770-4607-a49f-d03c6e4810e3.png)
+### 수집 로직
 
-### `dataset_meta` 테이블
-`dataset_meta` 테이블은 가져올 데이터셋에 대한 ID를 부여한 Master 테이블이다.
-
-![image](https://user-images.githubusercontent.com/22818292/230822811-b91c61b0-8455-41f5-99a5-56f9091bd286.png)
-
-### `dataset_log` 테이블
-`dataset_log` 테이블은 데이터셋 수집 시 Custom log를 저장하는 테이블이다.
-
-![image](https://user-images.githubusercontent.com/22818292/230822649-95017a11-3ae5-40b7-a0a5-d928f1ba8e52.png)
+수집 DAG의 Task를 살펴보면 다음과 같다.
 
 <br/>
 
-## 데이터 수집 프로세스
-
-### S3
-TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다. Spark에서는 연도 파티션 단위로 처리할 예정이다.
-
-데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. 
-
-parquet는 압축률이 좋기 때문에 csv로 치면 쵯 수 십 `GB` 될 것이다.
-
-![image](https://user-images.githubusercontent.com/22818292/230821333-6a7f2d59-6485-479a-ad03-b06c2102954e.png)
-
-![image](https://user-images.githubusercontent.com/22818292/230821705-2ae3a083-e6a5-4953-9dbd-35e358113f94.png)
-
- 
-### 수집 로직
-수집 DAG를 살펴보면 다음과 같다.
-
-**download_tlc_taxi_record**
+**download_tlc_taxi_record.py**
 ```python
     get_latest_dataset_id = get_latest_dataset_id() # 1
     get_urls = get_url(num=2) # 2
@@ -284,18 +287,121 @@ parquet는 압축률이 좋기 때문에 csv로 치면 쵯 수 십 `GB` 될 것�
 ```
 
 1. `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
-2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다. 이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/> 
+2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.<br/>
+이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/>
 `num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.<br/>
-예를들어<br/>
-`num=2`로 설정된 뒤 DAG가 스케줄에 의해 처리된다면, TLC Taxi Record가 월별 데이터를 제공하기 때문에 2019-02, 2019-03 데이터가 수집되고, 다음 실행 때는 2019-04, 2019-05 데이터가 수집된다.
-3. Dynamic Task Mapping 개념을 이용한 것으로, Runtime 때 정의된 만큼의 Task를 생성한다.<br/>
-데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.<br/>
-예를들어<br/>
-이전 실행이 2019-03 데이터셋까지 수집되었고<br/>
-현재 실행의 설정이 `num=2`이면, 2019-04, 2019-05 데이터<br/>
-`num=3이면,  2019-04, 2019-05, 2019-06 데이터가 **병렬**로 수집된다.<br/>
+3. Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.<br/>
+Dynamic Task Mapping은 Runtime 때 정의된 만큼의 Task를 생성한다.<br/>
+데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.
+
+<br/>
+
+예를들어
+
+`2019-03` 데이터셋까지 수집된 상태이고,
+
+현재 설정이 
+
+- `num=2`이면, `2019-04`, `2019-05` 데이터
+- `num=3`이면,  `2019-04`, `2019-05`, `2019-06` 데이터
+
+가 현재 실행에서 **병렬**로 수집된다.
 
 `num=2`
 ![image](https://user-images.githubusercontent.com/22818292/230826943-c962530f-3939-46bf-8cf7-87e075bf545e.png)
  `num=3`
 ![image](https://user-images.githubusercontent.com/22818292/230828233-5b87564e-650d-4e40-9f16-77bf1c83aa2a.png)
+
+<br/>
+<br/>
+
+### S3
+TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다.
+
+데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. (parquet는 압축률이 좋기 때문에 csv로 치면 최소 수 십 `GB` 될 것이다.)
+
+![image](https://user-images.githubusercontent.com/22818292/230821705-2ae3a083-e6a5-4953-9dbd-35e358113f94.png)
+
+<br/>
+
+## 데이터 분석 프로세스
+
+## EMR Cluster 설정 로직
+1. EMR Cluster를 생성하고, Pyspark Submit Step을 추가한다.
+2. Step을 Sensor가 모니터링한다.
+3. 모든 Step이 완료되면 Cluster를 종료한다.
+
+**analyze_tlc_taxi_record.py**
+```python
+create_job_flow = EmrCreateJobFlowOperator(
+        task_id="create_job_flow",
+        job_flow_overrides=JOB_FLOW_OVERRIDES
+    )
+
+    add_steps = EmrAddStepsOperator(
+        task_id="add_steps",
+        job_flow_id=create_job_flow.output,
+        steps=SPARK_STEPS,
+        wait_for_completion=True,
+    )
+
+    check_job_flow = EmrJobFlowSensor(
+        task_id="check_job_flow",
+        job_flow_id=create_job_flow.output
+    )
+
+    remove_cluster = EmrTerminateJobFlowOperator(
+        task_id="remove_cluster",
+        job_flow_id=create_job_flow.output
+    )
+
+create_job_flow >> add_steps >> check_job_flow >> remove_cluster
+```
+
+## Spark Submit 로직
+Spark Submit 로직은 2 부분으로 구성된다.
+
+
+```yaml
+SPARK_STEPS = [
+    {
+        "Name": "Preprocess TLC Taxi Record",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                "s3://tlc-taxi/scripts/preprocess_data.py",
+                "--src",
+                "s3://tlc-taxi/source/2019/",
+                "--output",
+                "s3://tlc-taxi/output/preprocess/",
+            ]
+        }
+    },
+    {
+        "Name": "Analyze preprocessed TLC Taxi Record",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                "s3://tlc-taxi/scripts/analyze_data.py",
+                "--src",
+                "s3://tlc-taxi/output/preprocess/",
+                "--output",
+                "s3://tlc-taxi/output/analyze/",
+            ]
+        }
+    },
+]
+```
+
+- `preprocess_data.py` Script를 이용하여, S3 `source` 폴더에 있는 데이터를 연도 파티션 단위로 읽어서 전처리 과정을 진행한다.<br/>
+전처리된 데이터는 `output/preprocess/` 경로에 Export된다.
+
+- `analyze_data.py` Script를 이용하여, 전처리된 데이터를 기반으로 다양한 분석 데이터를 `output/anlayze/` 경로에 Export한다.
