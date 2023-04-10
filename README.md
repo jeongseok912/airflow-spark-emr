@@ -260,6 +260,7 @@ Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수
 
 ### S3
 TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다. Spark에서는 연도 파티션 단위로 처리할 예정이다.
+데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. csv로 치면 수 백 `GB` ~ `TB`을 될 것이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230821333-6a7f2d59-6485-479a-ad03-b06c2102954e.png)
 
