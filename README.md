@@ -194,11 +194,41 @@ JOB_FLOW_OVERRIDES = {
         },
         {
             "Classification": "spark",
-            "Properites": {
+            "Properties": {
                 "maximizeResourceAllocation": "true"
             }
         }
     ]
 }
 ```
+<br/>
 
+# 파일 구조
+
+```
+airflow-spark-emr
+├── .github
+│   └── workflows
+│       └── checkout.yaml
+├── airflow_dags
+│   ├── analyze_tlc_taxi_record.py
+│   └── download_tlc_taxi_record.py
+└── spark_scripts
+    ├── analyze_data.py
+    └── preprocess_data.py
+```
+
+- `checkout.yaml` : Airflow DAGs를 Airflow Cluster에, Spark scripts를 S3에 deploy하는 프로세스를 정의한 문서
+- `airflow_dags` : Airflow DAGs를 담은 폴더
+
+  - `analyze_tlc_taxi_record.py` :  EMR Cluster를 생성하고, Spark를 실행하는 DAG
+  
+  - `download_tlc_taxi_Record.py` : TLC Taxi Record 데이터를 수집해서 S3에 저장하는 DAG
+ 
+- `spark_scripts` : Spark에서 실행할 Scripts를 담은 폴더
+
+  - `analyze_data.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로 다양한 분석용 데이터를 생성한다.
+  
+  - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script <br/>
+   이 과정을 통해 출력되는 데이터는 분석을 위해 공통으로 쓰이는 데이터가 된다.<br/>
+   전처리 과정에서는 데이터량을 줄이기 위해 불필요한 데이터는 지우고, 분석을 위해 필요한 데이터를 생성한다.
