@@ -221,6 +221,7 @@ airflow-spark-emr
 - `checkout.yaml` : Airflow DAGs를 Airflow Cluster에, Spark scripts를 S3에 deploy하는 프로세스를 정의한 문서
 - `airflow_dags` : Airflow DAGs를 담은 폴더
 
+  ![image](https://user-images.githubusercontent.com/22818292/230822139-f8ff50eb-f563-422e-a490-5f576e41db69.png)
   - `analyze_tlc_taxi_record.py` :  EMR Cluster를 생성하고, Spark를 실행하는 DAG
   
   - `download_tlc_taxi_Record.py` : TLC Taxi Record 데이터를 수집해서 S3에 저장하는 DAG
@@ -232,3 +233,54 @@ airflow-spark-emr
   - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script <br/>
    이 과정을 통해 출력되는 데이터는 분석을 위해 공통으로 쓰이는 데이터가 된다.<br/>
    전처리 과정에서는 데이터량을 줄이기 위해 불필요한 데이터는 지우고, 분석을 위해 필요한 데이터를 생성한다.
+   
+<br/>
+<br/>
+
+# 전체적인 흐름 설명
+
+## 데이터셋 메타, 로그 DB
+Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수집 시 별도로 로그를 저장하는 `tlc_taxi`라는 DB를 두었다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822983-ddcf92a2-4770-4607-a49f-d03c6e4810e3.png)
+
+### `dataset_meta` 테이블
+`dataset_meta` 테이블은 가져올 데이터셋에 대한 id를 부여한 Master 테이블이다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822811-b91c61b0-8455-41f5-99a5-56f9091bd286.png)
+
+### `dataset_log` 테이블
+`dataset_log` 테이블은 데이터셋 수집 시 커스텀한 로그를 저장하는 테이블이다.
+
+![image](https://user-images.githubusercontent.com/22818292/230822649-95017a11-3ae5-40b7-a0a5-d928f1ba8e52.png)
+
+<br/>
+
+## 데이터 수집 프로세스
+
+### S3
+TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다. Spark에서는 연도 파티션 단위로 처리할 예정이다.
+
+![image](https://user-images.githubusercontent.com/22818292/230821333-6a7f2d59-6485-479a-ad03-b06c2102954e.png)
+
+![image](https://user-images.githubusercontent.com/22818292/230821705-2ae3a083-e6a5-4953-9dbd-35e358113f94.png)
+
+ 
+### 수집 로직
+수집 DAG를 살펴보면 다음과 같다.
+
+**download_tlc_taxi_record**
+```python
+    get_latest_dataset_id = get_latest_dataset_id()
+    get_urls = get_url(num=2)
+
+    get_latest_dataset_id >> get_urls
+
+    fetch.expand(url=get_urls)
+```
+
+1. `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
+2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다. 이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/> 
+이 때, 몇 개의 데이터셋을 수집할 지 지정한다. Default로 2개의 데이터셋을 수집하도록 해놓았다.<br/>
+예를들어 Default 값대로 DAG가 스케줄에 의해 처리된다면, TLC Taxi Record가 월별 데이터를 제공하기 때문에 2019-02, 2019-03 데이터가 수집되고, 다음 실행 때는 2019-04, 2019-05 데이터가 수집된다.
+
