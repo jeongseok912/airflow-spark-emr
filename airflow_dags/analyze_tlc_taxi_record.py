@@ -106,10 +106,10 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
-def get_step(**context):
+def get_step(**context, [i]):
     steps = context['ti'].xcom_pull(task_ids='make_dynamic_step_definition')
 
-    return steps[0]
+    return steps[i]
 
     # print(steps)
     # print(type(steps))
@@ -185,14 +185,13 @@ with DAG(
         task_id="make_dynamic_step_definition",
         python_callable=make_dynamic_step_definition
     )
-
+    '''
     test = PythonOperator(
         task_id="test",
         python_callable=get_step
     )
+    '''
 
-
-'''
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -201,7 +200,7 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=get_step(make_dynamic_step_definition.output, 0),
+        steps=get_step(0),
         wait_for_completion=True,
     )
 
@@ -241,5 +240,5 @@ get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> 
 
 preprocess_data >> [analyze_elapsed_time, analyze_market_share,
                     analyze_popular_location] >> check_job_flow >> remove_cluster
-'''
-get_latest_year_partition >> make_dynamic_step_definition >> test
+
+# get_latest_year_partition >> make_dynamic_step_definition >> test
