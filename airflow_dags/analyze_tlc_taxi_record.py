@@ -106,7 +106,7 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
-def get_step(**context, [i]):
+def get_step(**context, i):
     steps = context['ti'].xcom_pull(task_ids='make_dynamic_step_definition')
 
     return steps[i]
