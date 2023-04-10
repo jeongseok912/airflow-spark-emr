@@ -119,7 +119,7 @@ with DAG(
         task_id="get_latest_year_partition",
         python_callable=get_latest_year_partition
     )
-
+'''
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -143,3 +143,4 @@ with DAG(
     )
 
 get_latest_year_partition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
+'''
