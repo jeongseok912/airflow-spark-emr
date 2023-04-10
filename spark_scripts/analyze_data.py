@@ -25,7 +25,7 @@ def get_elapsed_data(spark, src, output):
     avg_elapsed_by_month_df = elapsed_df.groupby('Company', 'year_month')\
         .avg('elapsed(m)')\
         .select('Company', 'year_month', round('avg(elapsed(m))').alias('elapsed(m)'))
-    avg_elapsed_by_month_df.coalesce(1).write.option('header', 'True').mode('overwrite').csv(
+    avg_elapsed_by_month_df.coalesce(10).write.option('header', 'True').mode('overwrite').csv(
         f'{output}/avg_elapsed_by_month')
 
 

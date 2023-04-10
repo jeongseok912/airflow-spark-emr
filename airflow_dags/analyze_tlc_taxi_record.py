@@ -1,12 +1,25 @@
 from datetime import datetime
 
 from airflow import DAG
+from airflow.models import Variable
+from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.operators.emr import (
     EmrAddStepsOperator,
     EmrCreateJobFlowOperator,
     EmrTerminateJobFlowOperator
 )
 from airflow.providers.amazon.aws.sensors.emr import EmrJobFlowSensor
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+
+
+def get_latest_year_partition():
+    bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
+    key = "source"
+
+    s3 = S3Hook('aws_default')
+    result = s3.get_object(Bucket=bucket, Key=key)
+    print(f"result : ", result)
+
 
 SPARK_STEPS = [
     {
@@ -100,6 +113,11 @@ with DAG(
     tags=['tlc_taxi_record']
 ) as dag:
 
+    get_latest_year_partition = PythonOperator(
+        task_id="get_latest_year_partition",
+        python_callable=get_latest_year_partition()
+    )
+
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -122,4 +140,4 @@ with DAG(
         job_flow_id=create_job_flow.output
     )
 
-create_job_flow >> add_steps >> check_job_flow >> remove_cluster
+get_latest_year_partition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
