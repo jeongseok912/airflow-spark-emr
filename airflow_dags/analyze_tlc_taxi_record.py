@@ -111,7 +111,7 @@ def get_step(steps, i):
     print(steps)
     print(type(steps))
 
-    return dict(str(steps))[i]
+    return list(steps)[i]
 
 
 JOB_FLOW_OVERRIDES = {
