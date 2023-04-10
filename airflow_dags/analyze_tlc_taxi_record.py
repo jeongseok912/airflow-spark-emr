@@ -86,7 +86,7 @@ JOB_FLOW_OVERRIDES = {
         },
         {
             "Classification": "spark",
-            "Properites": {
+            "Properties": {
                 "maximizeResourceAllocation": "true"
             }
         }
