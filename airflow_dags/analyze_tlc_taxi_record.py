@@ -186,7 +186,9 @@ with DAG(
     test = PythonOperator(
         task_id="test",
         python_callable=test,
-        op_args=[make_dynamic_step_definition.output]
+        op_kwargs={
+            "input": make_dynamic_step_definition.output
+        }
     )
 
 '''
