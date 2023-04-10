@@ -110,7 +110,7 @@ def make_dynamic_step_definition(**context):
 def get_step(steps, i):
     print(steps)
     print(type(steps))
-    print(json.loads(steps))
+    # print(json.loads(steps))
 
     return str(list(str(steps))[i])
 
