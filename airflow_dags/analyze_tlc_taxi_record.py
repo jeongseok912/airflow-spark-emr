@@ -38,7 +38,7 @@ def make_preprocess_data_definition(**context):
     STEP = [
         {
             "Name": "Preprocess TLC Taxi Record",
-            "ActionOnFailure": "CONTINUE",
+            "ActionOnFailure": "TERMINATE_CLUSTER",
             "HadoopJarStep": {
                 "Jar": "command-runner.jar",
                 "Args": [
@@ -180,7 +180,8 @@ JOB_FLOW_OVERRIDES = {
                 "maximizeResourceAllocation": "true"
             }
         }
-    ]
+    ],
+    "StepConcurrencyLevel": 3
 }
 
 
