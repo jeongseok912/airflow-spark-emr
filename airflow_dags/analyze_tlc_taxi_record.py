@@ -21,7 +21,7 @@ def get_latest_year_partition():
     print(f"r2 : {r2}")
     r3 = s3.list_prefixes(bucket_name=bucket)
     print(f"r3 : {r3}")
-    result = s3.list_prefixes(bucket_name=bucket, prefix=prefix)
+    result = s3.list_prefixes(bucket_name=bucket, prefix=prefix, delimiter='/')
     print(f"result : {result}")
 
 
