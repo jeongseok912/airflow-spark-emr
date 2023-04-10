@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 
 from airflow import DAG
 from airflow.models import Variable
@@ -106,15 +107,12 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
-def get_step(context, i):
-    steps = context['ti'].xcom_pull(task_ids='make_dynamic_step_definition')
+def get_step(steps, i):
+    print(steps)
+    print(type(steps))
+    print(json.loads(steps))
 
-    return steps[i]
-
-    # print(steps)
-    # print(type(steps))
-
-    # return str(list(str(steps))[i])
+    return str(list(str(steps))[i])
 
 
 def test(input):
@@ -193,6 +191,8 @@ with DAG(
     '''
 
     steps = make_dynamic_step_definition
+    print(steps)
+    p = steps[]
 
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
@@ -202,7 +202,7 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=steps[0],
+        steps=get_step(make_dynamic_step_definition.output, 0),
         wait_for_completion=True,
     )
 
