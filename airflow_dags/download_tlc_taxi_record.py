@@ -139,7 +139,8 @@ def fetch(url, **context):
                               aws_secret_access_key=aws_secret_access_key)
 
             bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
-            dir = f"source/{year}"
+            src = Variable.get("AWS_S3_SOURCE")
+            dir = f"{src}/{year}"
             key = f"{dir}/{file_name}"
 
             mpu_parts = []
