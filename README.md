@@ -405,3 +405,30 @@ SPARK_STEPS = [
 전처리된 데이터는 `output/preprocess/` 경로에 Export된다.
 
 - `analyze_data.py` Script를 이용하여, 전처리된 데이터를 기반으로 다양한 분석 데이터를 `output/anlayze/` 경로에 Export한다.
+
+<br/>
+
+## 최종 결과
+최종 데이터는 `output/anlayze/` 경로에 저장된다.
+
+도입부 시나리오 섹션에서 살펴본 것과 같은 분석 데이터를 제공한다.
+
+![image](https://user-images.githubusercontent.com/22818292/230843780-ead6d5d3-8df3-49a1-bd5e-cdeaeeb02ecb.png)
+
+### `avg_elpased_by_month`
+경쟁사와 자사의 ETA(콜 요청으로부터 요청장소까지 Taxi가 도착하는 경과시간)를 비교 분석하는 데이터
+
+월별 / 경쟁사별 평균 ETA를 라인 그래프로 시각화하기 적합하다.
+
+### `elapsed`
+예상 도착시간을 예측하는 ML 모델에 제공하기 위한 데이터
+
+### `market_share`
+경쟁사별 / 월별 점유율을 나타내는 데이터
+
+월별 / 경쟁사별 라인 그래프로 시각화하기 적합하다.
+
+![image](https://user-images.githubusercontent.com/22818292/230846096-7ea1c8c7-2412-4546-ab4a-60052d3a4a01.png)
+
+### `popular_location`
+택시 수요가 많은 인기 지역 및 급상승 인기 지역 데이터
