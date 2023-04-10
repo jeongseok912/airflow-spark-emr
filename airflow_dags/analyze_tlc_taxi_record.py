@@ -3,7 +3,8 @@ import json
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.models.baseoperator import chain
+from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.operators.emr import (
     EmrAddStepsOperator,
     EmrCreateJobFlowOperator,
@@ -30,103 +31,100 @@ def get_latest_year_partition():
     return latest_year
 
 
-def make_dynamic_step_definition(**context):
+def make_preprocess_data_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    SPARK_STEPS = [
-        {
-            "Name": "Preprocess TLC Taxi Record",
-            "ActionOnFailure": "CONTINUE",
-            "HadoopJarStep": {
-                "Jar": "command-runner.jar",
-                "Args": [
-                    "spark-submit",
-                    "--deploy-mode",
-                    "cluster",
-                    f"s3://{bucket}/{script}/preprocess_data.py",
-                    "--src",
-                    f"s3://{bucket}/{src}/{latest_year}/",
-                    "--output",
-                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                ]
-            }
-        },
-        {
-            "Name": "Analyze Elapsed Time",
-            "ActionOnFailure": "CONTINUE",
-            "HadoopJarStep": {
-                "Jar": "command-runner.jar",
-                "Args": [
-                    "spark-submit",
-                    "--deploy-mode",
-                    "cluster",
-                    f"s3://{bucket}/{script}/analyze_elapsed_time.py",
-                    "--src",
-                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                    "--output",
-                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
-                ]
-            }
-        },
-        {
-            "Name": "Analyze Market Share",
-            "ActionOnFailure": "CONTINUE",
-            "HadoopJarStep": {
-                "Jar": "command-runner.jar",
-                "Args": [
-                    "spark-submit",
-                    "--deploy-mode",
-                    "cluster",
-                    f"s3://{bucket}/{script}/analyze_market_share.py",
-                    "--src",
-                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                    "--output",
-                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
-                ]
-            }
-        },
-        {
-            "Name": "Analyze Popular Location",
-            "ActionOnFailure": "CONTINUE",
-            "HadoopJarStep": {
-                "Jar": "command-runner.jar",
-                "Args": [
-                    "spark-submit",
-                    "--deploy-mode",
-                    "cluster",
-                    f"s3://{bucket}/{script}/analyze_popular_location.py",
-                    "--src",
-                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                    "--output",
-                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
-                ]
-            }
+    STEP = {
+        "Name": "Preprocess TLC Taxi Record",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                f"s3://{bucket}/{script}/preprocess_data.py",
+                "--src",
+                f"s3://{bucket}/{src}/{latest_year}/",
+                "--output",
+                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+            ]
         }
-    ]
+    }
 
-    context["ti"].xcom_push(key='step_0', value=SPARK_STEPS[0])
-    context["ti"].xcom_push(key='step_1', value=SPARK_STEPS[1])
-    context["ti"].xcom_push(key='step_2', value=SPARK_STEPS[2])
-    context["ti"].xcom_push(key='step_3', value=SPARK_STEPS[3])
+    return STEP
 
 
-'''
-def get_step(**context):
-    step_0 = context["ti"].xcom_pull(key='step_0')
+def make_analyze_elapsed_time_definition(**context):
+    latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    #if step_0:
-    #    context.xcom_push()
-    #print(steps)
-    # print(type(steps))
-    # print(json.loads(steps))
+    STEP = {
+        "Name": "Analyze Elapsed Time",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                f"s3://{bucket}/{script}/analyze_elapsed_time.py",
+                "--src",
+                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                "--output",
+                f"s3://{bucket}/{output}/analyze/{latest_year}/",
+            ]
+        }
+    }
 
-    return 1#str(list(str(steps))[i])
-'''
+    return STEP
 
 
-def test(input):
-    print(input)
-    print(type(input))
+def make_analyze_market_share_definition(**context):
+    latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
+
+    STEP = {
+        "Name": "Analyze Market Share",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                f"s3://{bucket}/{script}/analyze_market_share.py",
+                "--src",
+                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                "--output",
+                f"s3://{bucket}/{output}/analyze/{latest_year}/",
+            ]
+        }
+    }
+
+    return STEP
+
+
+def make_analyze_popular_location_definition(**context):
+    latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
+
+    STEP = {
+        "Name": "Analyze Popular Location",
+        "ActionOnFailure": "CONTINUE",
+        "HadoopJarStep": {
+            "Jar": "command-runner.jar",
+            "Args": [
+                "spark-submit",
+                "--deploy-mode",
+                "cluster",
+                f"s3://{bucket}/{script}/analyze_popular_location.py",
+                "--src",
+                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                "--output",
+                f"s3://{bucket}/{output}/analyze/{latest_year}/",
+            ]
+        }
+    }
+
+    return STEP
 
 
 JOB_FLOW_OVERRIDES = {
@@ -188,48 +186,56 @@ with DAG(
         python_callable=get_latest_year_partition
     )
 
-    make_dynamic_step_definition = PythonOperator(
-        task_id="make_dynamic_step_definition",
-        python_callable=make_dynamic_step_definition
-    )
-
-    '''
-    test = PythonOperator(
-        task_id="test",
-        python_callable=get_step
-    )
-    '''
-
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
     )
 
+    make_preprocess_data_definition = PythonOperator(
+        task_id="make_preprocess_data_definition",
+        python_callable=make_preprocess_data_definition
+    )
+
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.output,
+        steps=make_preprocess_data_definition.output,
         wait_for_completion=True,
     )
-'''
+
+    make_analyze_elapsed_time_definition = PythonOperator(
+        task_id="make_analyze_elapsed_time_definition",
+        python_callable=make_analyze_elapsed_time_definition
+    )
+
     analyze_elapsed_time = EmrAddStepsOperator(
         task_id="analyze_elapsed_time",
         job_flow_id=create_job_flow.output,
-        steps=get_step(make_dynamic_step_definition.output, 1),
+        steps=make_analyze_elapsed_time_definition.output,
         wait_for_completion=True,
+    )
+
+    make_analyze_market_share_definition = PythonOperator(
+        task_id="make_analyze_market_share_definition",
+        python_callable=make_analyze_market_share_definition
     )
 
     analyze_market_share = EmrAddStepsOperator(
         task_id="analyze_market_share",
         job_flow_id=create_job_flow.output,
-        steps=get_step(make_dynamic_step_definition.output, 2),
+        steps=make_analyze_market_share_definition.output,
         wait_for_completion=True,
+    )
+
+    make_analyze_popular_location_definition = PythonOperator(
+        task_id="make_analyze_popular_location_definition",
+        python_callable=make_analyze_popular_location_definition
     )
 
     analyze_popular_location = EmrAddStepsOperator(
         task_id="analyze_popular_location",
         job_flow_id=create_job_flow.output,
-        steps=get_step(make_dynamic_step_definition.output, 3),
+        steps=make_analyze_popular_location_definition.output,
         wait_for_completion=True,
     )
 
@@ -244,11 +250,14 @@ with DAG(
         job_flow_id=create_job_flow.output
     )
 
-get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> preprocess_data
-
-preprocess_data >> [analyze_elapsed_time, analyze_market_share,
-                    analyze_popular_location] >> check_job_flow >> remove_cluster
-
-# get_latest_year_partition >> make_dynamic_step_definition >> test
-'''
-get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> preprocess_data
+chain(
+    get_latest_year_partition,
+    create_job_flow,
+    make_preprocess_data_definition,
+    preprocess_data,
+    [make_analyze_elapsed_time_definition, make_analyze_market_share_definition,
+        make_analyze_popular_location_definition],
+    [analyze_elapsed_time, analyze_market_share, analyze_popular_location],
+    check_job_flow,
+    remove_cluster
+)
