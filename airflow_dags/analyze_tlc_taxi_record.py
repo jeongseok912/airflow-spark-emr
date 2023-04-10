@@ -17,6 +17,8 @@ def get_latest_year_partition():
     prefix = "source/"
 
     s3 = S3Hook('aws_default')
+    r2 = s3.get_bucket(bucket_name=bucket)
+    print(f"r2 : {r2}")
     result = s3.list_prefixes(bucket_name=bucket, prefix=prefix)
     print(f"result : ", result)
 
