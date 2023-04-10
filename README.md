@@ -418,9 +418,11 @@ SPARK_STEPS = [
 ### `avg_elpased_by_month`
 경쟁사와 자사의 ETA(콜 요청으로부터 요청장소까지 Taxi가 도착하는 경과시간)를 비교 분석하는 데이터
 
+월별 / 경쟁사별 평균 ETA를 라인 그래프로 시각화하기 적합하다.
+
 ![image](https://user-images.githubusercontent.com/22818292/230854842-cdd15525-ad08-485b-8d1c-bea581eee93f.png)
 
-월별 / 경쟁사별 평균 ETA를 라인 그래프로 시각화하기 적합하다.
+
 
 ### `elapsed`
 예상 도착시간을 예측하는 ML 모델에 제공하기 위한 데이터
