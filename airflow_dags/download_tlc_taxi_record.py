@@ -189,7 +189,7 @@ with DAG(
 ) as dag:
 
     get_latest_dataset_id = get_latest_dataset_id()
-    get_urls = get_url(num=2)
+    get_urls = get_url(num=3)
 
     get_latest_dataset_id >> get_urls
 
