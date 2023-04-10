@@ -20,7 +20,7 @@ def get_latest_year_partition():
     prefixes = s3.list_prefixes(
         bucket_name=bucket, prefix=prefix, delimiter='/')
     print(f"result : {prefixes}")
-    print([prefix.spit('/') for prefix in prefixes])
+    print([prefix.split('/') for prefix in prefixes])
     print(prefixes.split('/'))
 
 
