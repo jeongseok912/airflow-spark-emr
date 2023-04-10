@@ -35,23 +35,25 @@ def get_latest_year_partition():
 def make_preprocess_data_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    STEP = {
-        "Name": "Preprocess TLC Taxi Record",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                f"s3://{bucket}/{script}/preprocess_data.py",
-                "--src",
-                f"s3://{bucket}/{src}/{latest_year}/",
-                "--output",
-                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-            ]
+    STEP = [
+        {
+            "Name": "Preprocess TLC Taxi Record",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/preprocess_data.py",
+                    "--src",
+                    f"s3://{bucket}/{src}/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                ]
+            }
         }
-    }
+    ]
 
     return STEP
 
@@ -59,23 +61,25 @@ def make_preprocess_data_definition(**context):
 def make_analyze_elapsed_time_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    STEP = {
-        "Name": "Analyze Elapsed Time",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                f"s3://{bucket}/{script}/analyze_elapsed_time.py",
-                "--src",
-                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                "--output",
-                f"s3://{bucket}/{output}/analyze/{latest_year}/",
-            ]
+    STEP = [
+        {
+            "Name": "Analyze Elapsed Time",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_elapsed_time.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
         }
-    }
+    ]
 
     return STEP
 
@@ -83,23 +87,25 @@ def make_analyze_elapsed_time_definition(**context):
 def make_analyze_market_share_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    STEP = {
-        "Name": "Analyze Market Share",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                f"s3://{bucket}/{script}/analyze_market_share.py",
-                "--src",
-                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                "--output",
-                f"s3://{bucket}/{output}/analyze/{latest_year}/",
-            ]
+    STEP = [
+        {
+            "Name": "Analyze Market Share",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_market_share.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
         }
-    }
+    ]
 
     return STEP
 
@@ -107,23 +113,25 @@ def make_analyze_market_share_definition(**context):
 def make_analyze_popular_location_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
-    STEP = {
-        "Name": "Analyze Popular Location",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                f"s3://{bucket}/{script}/analyze_popular_location.py",
-                "--src",
-                f"s3://{bucket}/{output}/preprocess/{latest_year}/",
-                "--output",
-                f"s3://{bucket}/{output}/analyze/{latest_year}/",
-            ]
+    STEP = [
+        {
+            "Name": "Analyze Popular Location",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_popular_location.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
         }
-    }
+    ]
 
     return STEP
 
