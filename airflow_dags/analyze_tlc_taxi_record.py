@@ -3,7 +3,7 @@ import json
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.providers.amazon.aws.operators.emr import (
     EmrAddStepsOperator,
     EmrCreateJobFlowOperator,
@@ -104,15 +104,24 @@ def make_dynamic_step_definition(**context):
         }
     ]
 
-    return SPARK_STEPS
+    context["ti"].xcom_push(key='step_0', value=SPARK_STEPS[0])
+    context["ti"].xcom_push(key='step_1', value=SPARK_STEPS[1])
+    context["ti"].xcom_push(key='step_2', value=SPARK_STEPS[2])
+    context["ti"].xcom_push(key='step_3', value=SPARK_STEPS[3])
 
 
-def get_step(steps, i):
-    print(steps)
-    print(type(steps))
+'''
+def get_step(**context):
+    step_0 = context["ti"].xcom_pull(key='step_0')
+
+    #if step_0:
+    #    context.xcom_push()
+    #print(steps)
+    # print(type(steps))
     # print(json.loads(steps))
 
-    return str(list(str(steps))[i])
+    return 1#str(list(str(steps))[i])
+'''
 
 
 def test(input):
@@ -183,16 +192,13 @@ with DAG(
         task_id="make_dynamic_step_definition",
         python_callable=make_dynamic_step_definition
     )
+
     '''
     test = PythonOperator(
         task_id="test",
         python_callable=get_step
     )
     '''
-
-    steps = make_dynamic_step_definition.output
-    print(steps)
-    print(type(steps))
 
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
@@ -202,10 +208,10 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=steps,
+        steps=make_dynamic_step_definition.step_0,
         wait_for_completion=True,
     )
-
+'''
     analyze_elapsed_time = EmrAddStepsOperator(
         task_id="analyze_elapsed_time",
         job_flow_id=create_job_flow.output,
@@ -244,3 +250,5 @@ preprocess_data >> [analyze_elapsed_time, analyze_market_share,
                     analyze_popular_location] >> check_job_flow >> remove_cluster
 
 # get_latest_year_partition >> make_dynamic_step_definition >> test
+'''
+get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> preprocess_data
