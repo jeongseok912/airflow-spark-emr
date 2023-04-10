@@ -136,7 +136,7 @@ with DAG(
         task_id="make_dynamic_step_definition",
         python_callable=make_dynamic_step_definition
     )
-'''
+
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -145,7 +145,7 @@ with DAG(
     add_steps = EmrAddStepsOperator(
         task_id="add_steps",
         job_flow_id=create_job_flow.output,
-        steps=SPARK_STEPS,
+        steps=make_dynamic_step_definition.output,
         wait_for_completion=True,
     )
 
@@ -160,5 +160,3 @@ with DAG(
     )
 
 get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> add_steps >> check_job_flow >> remove_cluster
-'''
-get_latest_year_partition >> make_dynamic_step_definition
