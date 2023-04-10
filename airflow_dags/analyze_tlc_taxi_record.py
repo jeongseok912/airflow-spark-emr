@@ -47,7 +47,7 @@ def make_dynamic_step_definition(**context):
                     "--src",
                     f"s3://{bucket}/{src}/{latest_year}/",
                     "--output",
-                    f"s3://{bucket}/{output}/preprocess/",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
                 ]
             }
         },
@@ -62,9 +62,9 @@ def make_dynamic_step_definition(**context):
                     "cluster",
                     f"s3://{bucket}/{script}/analyze_data.py",
                     "--src",
-                    f"s3://{bucket}/{output}/preprocess/",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
                     "--output",
-                    f"s3://{bucket}/{output}/analyze/",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
                 ]
             }
         },
