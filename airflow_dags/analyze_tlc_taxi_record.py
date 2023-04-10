@@ -187,7 +187,7 @@ with DAG(
         task_id="test",
         python_callable=test,
         op_kwargs={
-            "input": make_dynamic_step_definition.output[0]
+            "input": get_step(make_dynamic_step_definition.output, 0)
         }
     )
 
