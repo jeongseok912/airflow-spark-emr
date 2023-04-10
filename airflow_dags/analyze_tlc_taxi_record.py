@@ -192,6 +192,8 @@ with DAG(
     )
     '''
 
+    steps = make_dynamic_step_definition
+
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -200,7 +202,7 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=get_step(0),
+        steps=steps[0],
         wait_for_completion=True,
     )
 
