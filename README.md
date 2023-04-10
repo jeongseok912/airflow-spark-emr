@@ -245,12 +245,12 @@ Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수
 ![image](https://user-images.githubusercontent.com/22818292/230822983-ddcf92a2-4770-4607-a49f-d03c6e4810e3.png)
 
 ### `dataset_meta` 테이블
-`dataset_meta` 테이블은 가져올 데이터셋에 대한 id를 부여한 Master 테이블이다.
+`dataset_meta` 테이블은 가져올 데이터셋에 대한 ID를 부여한 Master 테이블이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230822811-b91c61b0-8455-41f5-99a5-56f9091bd286.png)
 
 ### `dataset_log` 테이블
-`dataset_log` 테이블은 데이터셋 수집 시 커스텀한 로그를 저장하는 테이블이다.
+`dataset_log` 테이블은 데이터셋 수집 시 Custom log를 저장하는 테이블이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230822649-95017a11-3ae5-40b7-a0a5-d928f1ba8e52.png)
 
@@ -260,6 +260,7 @@ Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수
 
 ### S3
 TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다. Spark에서는 연도 파티션 단위로 처리할 예정이다.
+
 데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. csv로 치면 수 백 `GB` ~ `TB`을 될 것이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230821333-6a7f2d59-6485-479a-ad03-b06c2102954e.png)
