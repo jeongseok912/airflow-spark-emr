@@ -108,7 +108,10 @@ def make_dynamic_step_definition(**context):
 
 
 def get_step(steps, i):
-    return dict(steps)[i]
+    print(steps)
+    print(type(steps))
+
+    return dict(str(steps))[i]
 
 
 JOB_FLOW_OVERRIDES = {
