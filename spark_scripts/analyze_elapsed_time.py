@@ -36,7 +36,7 @@ def main():
                         help='S3 output', default='s3://tlc-taxi/output')
     args = parser.parse_args()
 
-    spark = SparkSession.builder.appName("Analyze ETA").getOrCreate()
+    spark = SparkSession.builder.appName("Analyze Elapsed Time").getOrCreate()
 
     # 소요시간 분석
     get_elapsed_data(spark, src=args.src, output=args.output)
