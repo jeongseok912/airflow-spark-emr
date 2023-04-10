@@ -14,7 +14,7 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 def get_latest_year_partition():
     bucket = Variable.get("AWS_S3_BUCKET_TLC_TAXI")
-    prefix = "source/"
+    prefix = Variable.get("AWS_S3_SOURCE")
 
     s3 = S3Hook('aws_default')
     prefixes = s3.list_prefixes(
