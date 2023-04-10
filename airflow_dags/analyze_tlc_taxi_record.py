@@ -107,11 +107,12 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
-def get_step(steps, i):
-    print(steps)
-    print(type(steps))
+def get_step(**context, i):
+    print(context['ti'].xcom_pull(task_ids='make_dynamic_step_definition'))
+    # print(steps)
+    # print(type(steps))
 
-    return str(list(str(steps))[i])
+    # return str(list(str(steps))[i])
 
 
 def test(input):
@@ -185,10 +186,7 @@ with DAG(
 
     test = PythonOperator(
         task_id="test",
-        python_callable=test,
-        op_kwargs={
-            "input": get_step(make_dynamic_step_definition.output, 1)
-        }
+        python_callable=get_step
     )
 
 
