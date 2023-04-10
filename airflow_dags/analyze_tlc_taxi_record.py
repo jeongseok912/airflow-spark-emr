@@ -151,7 +151,8 @@ with DAG(
 
     check_job_flow = EmrJobFlowSensor(
         task_id="check_job_flow",
-        job_flow_id=create_job_flow.output
+        job_flow_id=create_job_flow.output,
+        target_states='WAITING'
     )
 
     remove_cluster = EmrTerminateJobFlowOperator(
