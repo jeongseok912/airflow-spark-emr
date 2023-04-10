@@ -64,7 +64,9 @@ SPARK_STEPS = [
 ]
 
 
-print(SPARK_STEPS)
+def p():
+    print(SPARK_STEPS)
+
 
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
@@ -122,7 +124,7 @@ with DAG(
 
     get_latest_year_partition = PythonOperator(
         task_id="get_latest_year_partition",
-        python_callable=get_latest_year_partition
+        python_callable=p
     )
 '''
     create_job_flow = EmrCreateJobFlowOperator(
