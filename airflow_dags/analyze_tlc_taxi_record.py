@@ -19,9 +19,12 @@ def get_latest_year_partition():
     s3 = S3Hook('aws_default')
     prefixes = s3.list_prefixes(
         bucket_name=bucket, prefix=prefix, delimiter='/')
-    print(f"result : {prefixes}")
-    print(max([int(prefix.split('/')[-2]) for prefix in prefixes]))
+    latest_year = max([int(prefix.split('/')[-2]) for prefix in prefixes])
 
+    return latest_year
+
+
+latest_year = get_latest_year_partition()
 
 SPARK_STEPS = [
     {
@@ -35,7 +38,7 @@ SPARK_STEPS = [
                 "cluster",
                 "s3://tlc-taxi/scripts/preprocess_data.py",
                 "--src",
-                "s3://tlc-taxi/source/2019/",
+                f"s3://tlc-taxi/source/{latest_year}/",
                 "--output",
                 "s3://tlc-taxi/output/preprocess/",
             ]
@@ -60,6 +63,8 @@ SPARK_STEPS = [
     },
 ]
 
+
+print(SPARK_STEPS)
 
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
