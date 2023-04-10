@@ -208,7 +208,7 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=make_dynamic_step_definition.step_0,
+        steps=make_dynamic_step_definition.output,
         wait_for_completion=True,
     )
 '''
