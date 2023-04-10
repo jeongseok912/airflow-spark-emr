@@ -30,8 +30,7 @@ def get_latest_year_partition():
 
 
 def make_dynamic_step_definition(**context):
-    latest_year = context["task_instance"].xcom_pull(
-        task_ids='get_latest_year_partition')
+    latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
     SPARK_STEPS = [
         {
@@ -107,8 +106,9 @@ def make_dynamic_step_definition(**context):
     return SPARK_STEPS
 
 
-def get_step(**context, i):
+def get_step(**context):
     print(context['ti'].xcom_pull(task_ids='make_dynamic_step_definition'))
+
     # print(steps)
     # print(type(steps))
 
