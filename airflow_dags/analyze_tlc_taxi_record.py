@@ -101,7 +101,7 @@ def make_dynamic_step_definition(**context):
                     f"s3://{bucket}/{output}/analyze/{latest_year}/",
                 ]
             }
-        },
+        }
     ]
 
     return SPARK_STEPS
