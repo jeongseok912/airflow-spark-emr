@@ -192,7 +192,6 @@ with DAG(
 
     steps = make_dynamic_step_definition
     print(steps)
-    p = steps[]
 
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
