@@ -190,7 +190,7 @@ with DAG(
     )
     '''
 
-    steps = make_dynamic_step_definition
+    steps = make_dynamic_step_definition.output
     print(steps)
 
     create_job_flow = EmrCreateJobFlowOperator(
@@ -201,7 +201,7 @@ with DAG(
     preprocess_data = EmrAddStepsOperator(
         task_id="preprocess_data",
         job_flow_id=create_job_flow.output,
-        steps=get_step(make_dynamic_step_definition.output, 0),
+        steps=steps[0],
         wait_for_completion=True,
     )
 
