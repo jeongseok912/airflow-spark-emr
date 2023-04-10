@@ -5,42 +5,6 @@ from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 
 
-def get_elapsed_data(spark, src, output):
-    df = spark.read.parquet(src)
-    elapsed_df = df.na.drop(subset=['request_datetime', 'on_scene_datetime'])\
-        .withColumn('elapsed(m)', round((unix_timestamp('on_scene_datetime') - unix_timestamp('request_datetime')) / 60))
-
-    # 도착예정시간(ETA) 예측을 위한 ML 학습 데이터
-    elapsed_for_export_df = elapsed_df.select(
-        'Company',
-        'Date',
-        'PULocationID',
-        'DOLocationID',
-        'elapsed(m)'
-    )
-    elapsed_for_export_df.coalesce(1).write.option('header', 'True').mode(
-        'overwrite').csv(f'{output}/elapsed')
-
-    # 경쟁사 간 월별 평균 소요시간 추이 분석을 위한 데이터
-    avg_elapsed_by_month_df = elapsed_df.groupby('Company', 'year_month')\
-        .avg('elapsed(m)')\
-        .select('Company', 'year_month', round('avg(elapsed(m))').alias('elapsed(m)'))
-    avg_elapsed_by_month_df.coalesce(10).write.option('header', 'True').mode('overwrite').csv(
-        f'{output}/avg_elapsed_by_month')
-
-
-def get_market_share_data(spark, src, output):
-    sumWindowSpec = Window.partitionBy('year_month')
-
-    df = spark.read.parquet(src)
-    share_df = df.groupby('Company', 'year_month').count()\
-        .withColumn('share', round(col('count') / sum('count').over(sumWindowSpec) * 100, 2))\
-        .sort('year_month', 'Company')
-
-    share_df.coalesce(1).write.option('header', 'True').mode(
-        'overwrite').csv(f'{output}/market_share')
-
-
 def get_popular_location_data(spark, src, output):
     sumWindowSpec = Window.partitionBy('year_month')
     rankWindowSpec = Window.partitionBy('year_month').orderBy(desc('count'))
@@ -89,13 +53,7 @@ def main():
     args = parser.parse_args()
 
     spark = SparkSession.builder.appName(
-        "PySpark - Analyze preprocessed TLC Taxi Record").getOrCreate()
-
-    # 소요시간 분석
-    get_elapsed_data(spark, src=args.src, output=args.output)
-
-    # 시장 점유율 분석
-    get_market_share_data(spark, src=args.src, output=args.output)
+        "Analyze Popular Location").getOrCreate()
 
     # 인기 지역 분석
     get_popular_location_data(spark, src=args.src, output=args.output)

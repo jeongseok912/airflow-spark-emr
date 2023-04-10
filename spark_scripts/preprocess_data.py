@@ -49,7 +49,7 @@ def main():
     args = parser.parse_args()
 
     spark = SparkSession.builder.appName(
-        "PySpark - Preprocess TLC Taxi Record").getOrCreate()
+        "Preprocess TLC Taxi Record").getOrCreate()
 
     preprocess_data(spark, src=args.src, output=args.output)
 
