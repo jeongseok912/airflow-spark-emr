@@ -114,6 +114,11 @@ def get_step(steps, i):
     return str(list(str(steps))[i])
 
 
+def test(input):
+    print(input)
+    print(type(input))
+
+
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
     "LogUri": "s3://emr--log/",
@@ -178,6 +183,13 @@ with DAG(
         python_callable=make_dynamic_step_definition
     )
 
+    test = PythonOperator(
+        task_id="test",
+        python_callable=test,
+        op_args=[make_dynamic_step_definition.output]
+    )
+
+'''
     create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
         job_flow_overrides=JOB_FLOW_OVERRIDES
@@ -226,3 +238,5 @@ get_latest_year_partition >> make_dynamic_step_definition >> create_job_flow >> 
 
 preprocess_data >> [analyze_elapsed_time, analyze_market_share,
                     analyze_popular_location] >> check_job_flow >> remove_cluster
+'''
+get_latest_year_partition >> make_dynamic_step_definition >> test
