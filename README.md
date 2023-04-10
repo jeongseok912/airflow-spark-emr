@@ -142,16 +142,23 @@ Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다�
 
 ![image](https://user-images.githubusercontent.com/22818292/229800380-274fff08-cf35-470c-9dab-36d25c66d86a.png)
 <br/>
+<br/>
 
 ### EMR Cluster
-다음과 같은 정의로 구현한다.<br/>
+EMR Cluster는 Spark + YARN(default)만 사용할 예정이다.<br/>
+Cluster Resource 내에서 데이터셋의 크기에 따라 탄력적으로 조절하는 방식으로 운영하기 위해, 기본 사양은 Core Node 2대와 `m5.xlarge` 유형으로 구성한다.
 <br/>
+
+![image](https://user-images.githubusercontent.com/22818292/230817404-a314a541-4598-4c96-981e-06fc7b06fa8c.png)
+
+<br/>
+
 ```yaml
 JOB_FLOW_OVERRIDES = {
     "Name": "PySpark Cluster",
-    "LogUri": "s3://airflow--log/emr-log/",
+    "LogUri": "s3://emr--log/",
     "ReleaseLabel": "emr-6.10.0",
-    "Applications": [{"Name": "Spark"}, {"Name": "JupyterEnterpriseGateway"}],
+    "Applications": [{"Name": "Spark"}],
     "Instances": {
         "EmrManagedMasterSecurityGroup": "sg-0a8997b0ae4e90d07",
         "EmrManagedSlaveSecurityGroup": "sg-055cef9cc6cc12658",
@@ -177,7 +184,21 @@ JOB_FLOW_OVERRIDES = {
         "TerminationProtected": False
     },
     "JobFlowRole": "EMR_EC2_DefaultRole",
-    "ServiceRole": "EMR_DefaultRole"
+    "ServiceRole": "EMR_DefaultRole",
+    "Configurations": [
+        {
+            "Classification": "yarn-site",
+            "Properties": {
+                "yarn.resourcemanager.am.max-attempts": "1"
+            }
+        },
+        {
+            "Classification": "spark",
+            "Properites": {
+                "maximizeResourceAllocation": "true"
+            }
+        }
+    ]
 }
 ```
 
