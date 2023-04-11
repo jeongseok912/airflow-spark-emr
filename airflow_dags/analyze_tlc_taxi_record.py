@@ -187,6 +187,7 @@ JOB_FLOW_OVERRIDES = {
 with DAG(
     'analyze_tlc_taxi_record',
     start_date=datetime(2023, 2, 28),
+    schedule=None,
     tags=['tlc_taxi_record']
 ) as dag:
 
