@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 
 from airflow import DAG
 from airflow.models import Variable
@@ -187,7 +186,7 @@ JOB_FLOW_OVERRIDES = {
 
 with DAG(
     'analyze_tlc_taxi_record',
-    start_date=datetime(2023, 3, 28),
+    start_date=datetime(2023, 2, 28),
     tags=['tlc_taxi_record']
 ) as dag:
 
