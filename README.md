@@ -287,35 +287,22 @@ airflow-spark-emr
 
 ![image](https://user-images.githubusercontent.com/22818292/231070462-c8d506f0-9431-4478-875b-289a044d5826.png)
 
-```python
-) as dag:
 
-    get_latest_dataset_id = get_latest_dataset_id() # 1
-    get_urls = get_url(num=2) # 2
+**1. get_latest_dataset_id**<br/>
+`dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
 
-    get_latest_dataset_id >> get_urls
-
-    fetch = fetch.expand(url=get_urls) # 3
-
-    trigger_dag = TriggerDagRunOperator( # 4
-        task_id="trigger_analyze_tlc_taxi_record_dag",
-        trigger_dag_id="analyze_tlc_taxi_record"
-    )
-
-    fetch >> trigger_dag
-```
-
-1. `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
-
-2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.<br/>
+**2. get_url**<br/>
+`dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.<br/>
 이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/>
 `num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.
 
-3. Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.<br/>
-Dynamic Task Mapping은 Runtime 때 정의된 만큼의 Task를 생성한다.<br/>
+**3. fetch [n]**<br/>
+Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.<br/>
+Dynamic Task Mapping은 Runtime 때 정의된 `n`만큼의 Task를 생성한다.<br/>
 데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.
 
-4. 데이터 수집 프로세스가 끝나면 데이터 분석 프로세스 (`analyze_tlc_taxi_record`) DAG를 Trigger한다.
+**4. trigger_analyze_tlc_taxi_record_dag**<br/>
+데이터 수집 프로세스가 끝나면 데이터 분석 프로세스 (`analyze_tlc_taxi_record`) DAG를 Trigger한다.
 
 <br/>
 
@@ -323,9 +310,7 @@ Dynamic Task Mapping은 Runtime 때 정의된 만큼의 Task를 생성한다.<br
 
 예를들어
 
-`2019-03` 데이터셋까지 수집된 상태이고,
-
-현재 설정이 
+`2019-03` 데이터셋까지 수집된 상태이고, 현재 설정이 
 
 - `num=2`이면, `2019-04`, `2019-05` 데이터
 - `num=3`이면,  `2019-04`, `2019-05`, `2019-06` 데이터
@@ -337,7 +322,6 @@ Dynamic Task Mapping은 Runtime 때 정의된 만큼의 Task를 생성한다.<br
  `num=3`
 ![image](https://user-images.githubusercontent.com/22818292/230828233-5b87564e-650d-4e40-9f16-77bf1c83aa2a.png)
 
-<br/>
 <br/>
 
 ### S3
