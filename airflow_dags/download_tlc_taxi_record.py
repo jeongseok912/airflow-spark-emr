@@ -195,7 +195,7 @@ with DAG(
 
     get_latest_dataset_id >> get_urls
 
-    fetch.expand(url=get_urls)
+    fetch = fetch.expand(url=get_urls)
 
     trigger_dag = TriggerDagRunOperator(
         task_id="trigger_analyze_tlc_taxi_record_dag",
