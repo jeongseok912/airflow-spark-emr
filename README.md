@@ -227,7 +227,8 @@ JOB_FLOW_OVERRIDES = {
                 "maximizeResourceAllocation": "true"
             }
         }
-    ]
+    ],
+    "StepConcurrencyLevel": 3
 }
 ```
 <br/>
@@ -243,11 +244,14 @@ airflow-spark-emr
 │   ├── analyze_tlc_taxi_record.py
 │   └── download_tlc_taxi_record.py
 └── spark_scripts
-    ├── analyze_data.py
+    ├── analyze_elapsed_time.py
+    ├── analyze_market_share.py
+    ├── analyze_popular_location.py
     └── preprocess_data.py
 ```
 
-- `checkout.yaml` : Airflow DAGs를 Airflow Cluster에, Spark scripts를 S3에 deploy하는 프로세스를 정의한 문서
+- `checkout.yaml` : Airflow DAGs를 Airflow Cluster에, Spark Scripts를 S3에 Deploy하는 프로세스를 정의한 문서
+
 - `airflow_dags` : Airflow DAGs를 담은 폴더
 
   ![image](https://user-images.githubusercontent.com/22818292/230822139-f8ff50eb-f563-422e-a490-5f576e41db69.png)
@@ -257,7 +261,11 @@ airflow-spark-emr
  
 - `spark_scripts` : Spark에서 실행할 Scripts를 담은 폴더
 
-  - `analyze_data.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로 다양한 분석용 데이터를 생성한다.
+  - `analyze_elapsed_time.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 경과시간에 대한 분석 데이터를 생성한다.
+
+  - `analyze_market_share.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 시장 점유율 분석 데이터를 생성한다.
+
+  - `analyze_popular_location.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 인기 지역 분석 데이터를 생성한다.
   
   - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script <br/>
    이 과정을 통해 출력되는 데이터는 분석을 위해 공통으로 쓰이는 데이터가 된다.<br/>
