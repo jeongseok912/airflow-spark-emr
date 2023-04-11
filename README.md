@@ -356,123 +356,222 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 ![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
 
 **get_latest_year_partition**
-S3에 수집된 데이터를 파티션하는 연도 파티션에서 최신년도 파티션 정보를 가져온다. 
 
-이는 연도 파티션 단위로 Spark Job이 실행되고, 스케줄에 의해 실행될 때마다 최신 데이터를 가져오기 때문이다.
+S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 연도 파티션 정보를 가져온다. 
+
+이는 연도 파티션 단위로 Spark Job이 실행되고, 스케줄에 의해 실행될 때마다 현시점에 더 근접한 데이터를 가져오기 때문이다.
 
 예를 들어
 
-`2019-12` 데이터가 수집될 때 `2019` 파티션에 저장되고 Spark는 2019년 데이터에 대해 처리한다.
+`2019-11` 데이터가 수집될 때 `2019` 파티션에 저장되고, Spark는 2019년 데이터에 대해 처리한다.
+
+다음 스케줄에는 `2019-12` 데이터가 수집되며 `2019` 파티션에 저장되고, Spark는 2019년 데이터에 대해 처리한다.
+
+> 실행 시마다 해당연도 파티션에 월별 데이터가 누적되고, Spark가 처리하는 데이터양도 누적된다.
+
+<br/>
 
 다음 스케줄에는 `2020-01` 데이터가 수집되며 `2020` 파티션에 저장된다. Spark는 2020년 데이터에 대해 처리한다.
 
-이 Flow를 자동화 하기 위해서는 최신연도 정보를 가져오는 동적 처리가 필요하다.
+이 Flow를 자동화 하기 위해서는 마지막 연도 정보를 가져오는 동적 처리가 필요하기 때문이다.
+
+<br/>
 
 **create_job_flow**
+
+EMR Cluster를 생성한다.
+
+<br/>
 
 **preprocess**
 
 - make_preprocess_data_definition
 
+  `preprocess_data` Task 실행을 위한 동적 Spark Submit 정의를 생성한다. 
+  
+  ```yaml
+  STEP = [
+        {
+            "Name": "Preprocess TLC Taxi Record",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/preprocess_data.py",
+                    "--src",
+                    f"s3://{bucket}/{src}/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                ]
+            }
+        }
+    ]
+  ```
+  
 - preprocess_data
+  
+  전처리 데이터를 생성하는 Spark Job을 실행한다. 
+  
+<br/>
+
+---
+전처리된 데이터를 기반으로 3가지 주제에 대한 분석 데이터를 생성한다.
+
+3가지 주제에 대한 분석은 전처리된 데이터를 공통으로 사용하기 때문에 병렬 처리로 진행한다.
+
+<br/>
 
 **analyze_1**
 
 - make_analyze_elapsed_time_definition
 
+  `analyze_elapsed_time` Task 실행을 위한 동적 Spark Submit 정의를 생성한다. 
+  
+  ```yaml
+  STEP = [
+        {
+            "Name": "Analyze Elapsed Time",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_elapsed_time.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        }
+    ]
+  ```
+  
 - analyze_elapsed_time
+
+  택시의 콜 요청장소 도착소요시간에 대한 분석 데이터(경쟁사별, 월별 평균 도착소요시간 데이터)와 ML 학습용 데이터(예정도착시간(ETA) 예측을 위해 가공된 데이터)를 생성하는 Spark Job을 실행한다.
+
+<br/>
 
 **analyze_2**
 
 - make_analyze_market_share_definition
 
+  `analyze_market_share` Task 실행을 위한 동적 Spark Submit 정의를 생성한다. 
+  
+  ```yaml
+  STEP = [
+        {
+            "Name": "Analyze Market Share",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_market_share.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        }
+    ]
+  ```
+  
 - analyze_market_share
+
+  시장 점유율 분석 데이터(경쟁사별, 월별 점유율 데이터)를 생성하는 Spark Job을 실행한다.
+
+<br/>
 
 **analyze_3**
 
 - make_analyze_popular_location_definition
 
+  `analyze_popular_location` Task 실행을 위한 동적 Spark Submit 정의를 생성한다. 
+  
+  ```yaml
+  STEP = [
+        {
+            "Name": "Analyze Popular Location",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/analyze_popular_location.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        }
+    ]
+  ```
+  
 - analyze_popular_location
+
+  인기 지역 분석 데이터(월별 인기 지역, 인기 급상승 지역 데이터)를 생성하는 Spark Job을 실행한다.
+
+<br/>
 
 **check_job_flow**
 
+EMR Cluster가 Job들을 수행 후 유휴 상태인지 (`WAITING` 상태) 확인한다.
+
+<br/>
+
 **remove_cluster**
 
-## Spark Submit 로직
-Spark Submit 로직은 2 부분으로 구성된다.
+EMR Cluster를 종료한다.
 
-
-```yaml
-SPARK_STEPS = [
-    {
-        "Name": "Preprocess TLC Taxi Record",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                "s3://tlc-taxi/scripts/preprocess_data.py",
-                "--src",
-                "s3://tlc-taxi/source/2019/",
-                "--output",
-                "s3://tlc-taxi/output/preprocess/",
-            ]
-        }
-    },
-    {
-        "Name": "Analyze preprocessed TLC Taxi Record",
-        "ActionOnFailure": "CONTINUE",
-        "HadoopJarStep": {
-            "Jar": "command-runner.jar",
-            "Args": [
-                "spark-submit",
-                "--deploy-mode",
-                "cluster",
-                "s3://tlc-taxi/scripts/analyze_data.py",
-                "--src",
-                "s3://tlc-taxi/output/preprocess/",
-                "--output",
-                "s3://tlc-taxi/output/analyze/",
-            ]
-        }
-    },
-]
-```
-
-- `preprocess_data.py` Script를 이용하여, S3 `source` 폴더에 있는 데이터를 연도 파티션 단위로 읽어서 전처리 과정을 진행한다.<br/>
-전처리된 데이터는 `output/preprocess/` 경로에 Export된다.
-
-- `analyze_data.py` Script를 이용하여, 전처리된 데이터를 기반으로 다양한 분석 데이터를 `output/anlayze/` 경로에 Export한다.
 
 <br/>
 
 ## 최종 결과
-최종 데이터는 `output/anlayze/` 경로에 저장된다.
+최종 분석 데이터는 `output/anlayze/{연도 파티션}` 경로에 저장된다.
 
-도입부 시나리오 섹션에서 살펴본 것과 같은 분석 데이터를 제공한다.
-
-![image](https://user-images.githubusercontent.com/22818292/230843780-ead6d5d3-8df3-49a1-bd5e-cdeaeeb02ecb.png)
+![image](https://user-images.githubusercontent.com/22818292/231221847-d4fc654b-3f64-4ff1-b33d-5a0954c5ceb9.png)
 
 ### `avg_elpased_by_month`
-경쟁사와 자사의 ETA(콜 요청으로부터 요청장소까지 Taxi가 도착하는 경과시간)를 비교 분석하는 데이터
 
-월별 / 경쟁사별 평균 ETA를 라인 그래프로 시각화하기 적합하다.
+경쟁사와 자사의 택시의 콜 요청장소 도착소요시간을 비교 분석하는 데이터
 
-![image](https://user-images.githubusercontent.com/22818292/230854842-cdd15525-ad08-485b-8d1c-bea581eee93f.png)
+월별 / 경쟁사별 평균 도착소요시간을 라인 그래프로 시각화하기 적합하다.
 
+![image](https://user-images.githubusercontent.com/22818292/231222245-793006b0-fe96-459a-a587-21d43fb412f8.png)
 
+<br/>
 
 ### `elapsed`
-예상 도착시간을 예측하는 ML 모델에 제공하기 위한 데이터
+
+ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이터
+
+![image](https://user-images.githubusercontent.com/22818292/231223480-e379704f-6397-486b-a02a-ce612227032f.png)
+
+<br/>
 
 ### `market_share`
+
 경쟁사별 / 월별 점유율을 나타내는 데이터
 
 월별 / 경쟁사별 라인 그래프로 시각화하기 적합하다.
 
-![image](https://user-images.githubusercontent.com/22818292/230846096-7ea1c8c7-2412-4546-ab4a-60052d3a4a01.png)
+![image](https://user-images.githubusercontent.com/22818292/231223700-b7c34733-1855-4b56-b9dc-906c0baa783e.png)
+
+<br/>
 
 ### `popular_location`
+
 택시 수요가 많은 인기 지역 및 급상승 인기 지역 데이터
