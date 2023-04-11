@@ -254,7 +254,6 @@ airflow-spark-emr
 
 - `airflow_dags` : Airflow DAGs를 담은 폴더
 
-  ![image](https://user-images.githubusercontent.com/22818292/230822139-f8ff50eb-f563-422e-a490-5f576e41db69.png)
   - `analyze_tlc_taxi_record.py` :  EMR Cluster를 생성하고, Spark를 실행하는 DAG
   
   - `download_tlc_taxi_Record.py` : TLC Taxi Record 데이터를 수집해서 S3에 저장하는 DAG
@@ -274,7 +273,7 @@ airflow-spark-emr
 <br/>
 <br/>
 
-# 전체적인 흐름 설명
+# 프로세스 세부 설명
 
 ## 데이터 수집 프로세스
 
@@ -285,24 +284,42 @@ airflow-spark-emr
 <br/>
 
 **download_tlc_taxi_record.py**
+
+![image](https://user-images.githubusercontent.com/22818292/231070462-c8d506f0-9431-4478-875b-289a044d5826.png)
+
 ```python
+) as dag:
+
     get_latest_dataset_id = get_latest_dataset_id() # 1
     get_urls = get_url(num=2) # 2
 
     get_latest_dataset_id >> get_urls
 
-    fetch.expand(url=get_urls) # 3
+    fetch = fetch.expand(url=get_urls) # 3
+
+    trigger_dag = TriggerDagRunOperator( # 4
+        task_id="trigger_analyze_tlc_taxi_record_dag",
+        trigger_dag_id="analyze_tlc_taxi_record"
+    )
+
+    fetch >> trigger_dag
 ```
 
 1. `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
+
 2. `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.<br/>
 이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/>
-`num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.<br/>
+`num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.
+
 3. Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.<br/>
 Dynamic Task Mapping은 Runtime 때 정의된 만큼의 Task를 생성한다.<br/>
 데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.
 
+4. 데이터 수집 프로세스가 끝나면 데이터 분석 프로세스 (`analyze_tlc_taxi_record`) DAG를 Trigger한다.
+
 <br/>
+
+수집 프로세스의 이번에 가져올 데이터셋 정보와 병렬 처리 로직을 좀 더 설명하면 다음과 같다.
 
 예를들어
 
@@ -340,6 +357,9 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 3. 모든 Step이 완료되면 Cluster를 종료한다.
 
 **analyze_tlc_taxi_record.py**
+
+![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
+
 ```python
 create_job_flow = EmrCreateJobFlowOperator(
         task_id="create_job_flow",
