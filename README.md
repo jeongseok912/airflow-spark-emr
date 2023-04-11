@@ -356,10 +356,47 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 ![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
 
 **get_latest_year_partition**
+S3에 수집된 데이터를 파티션하는 연도 파티션에서 최신년도 파티션 정보를 가져온다. 
+
+이는 연도 파티션 단위로 Spark Job이 실행되고, 스케줄에 의해 실행될 때마다 최신 데이터를 가져오기 때문이다.
+
+예를 들어
+
+`2019-12` 데이터가 수집될 때 `2019` 파티션에 저장되고 Spark는 2019년 데이터에 대해 처리한다.
+
+다음 스케줄에는 `2020-01` 데이터가 수집되며 `2020` 파티션에 저장된다. Spark는 2020년 데이터에 대해 처리한다.
+
+이 Flow를 자동화 하기 위해서는 최신연도 정보를 가져오는 동적 처리가 필요하다.
 
 **create_job_flow**
 
 **preprocess**
+
+- make_preprocess_data_definition
+
+- preprocess_data
+
+**analyze_1**
+
+- make_analyze_elapsed_time_definition
+
+- analyze_elapsed_time
+
+**analyze_2**
+
+- make_analyze_market_share_definition
+
+- analyze_market_share
+
+**analyze_3**
+
+- make_analyze_popular_location_definition
+
+- analyze_popular_location
+
+**check_job_flow**
+
+**remove_cluster**
 
 ## Spark Submit 로직
 Spark Submit 로직은 2 부분으로 구성된다.
