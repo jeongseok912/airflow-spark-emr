@@ -35,7 +35,7 @@ def get_popular_location_data(spark, src, output):
             'rank',
             'prev_month_share',
             'prev_month_rank',
-            round(col('share') - col('prev_month_share')).alias('share_var(%p)'),
+            (col('share') - col('prev_month_share')).alias('share_var(%p)'),
             (col('rank') - col('prev_month_rank')).alias('rank_var')
         )\
         .sort('year_month', desc('rank_var'))
