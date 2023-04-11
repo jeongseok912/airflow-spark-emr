@@ -288,23 +288,37 @@ airflow-spark-emr
 ![image](https://user-images.githubusercontent.com/22818292/231070462-c8d506f0-9431-4478-875b-289a044d5826.png)
 
 
-**1. get_latest_dataset_id**<br/>
+**get_latest_dataset_id**
+
 `dataset_log` 로그 테이블에서 마지막으로 처리된 데이터셋 ID를 가져온다.
 
-**2. get_url**<br/>
-`dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.<br/>
-이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.<br/>
+<br/>
+
+**get_url**
+
+`dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.
+
+이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.
+
 `num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.
 
-**3. fetch [n]**<br/>
-Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.<br/>
-Dynamic Task Mapping은 Runtime 때 정의된 `n`만큼의 Task를 생성한다.<br/>
+<br/>
+
+**fetch [n]**
+
+Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.
+
+Dynamic Task Mapping은 Runtime 때 정의된 `n`만큼의 Task를 생성한다.
+
 데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.
 
-**4. trigger_analyze_tlc_taxi_record_dag**<br/>
+<br/>
+
+**trigger_analyze_tlc_taxi_record_dag**
+
 데이터 수집 프로세스가 끝나면 데이터 분석 프로세스 (`analyze_tlc_taxi_record`) DAG를 Trigger한다.
 
-<br/>
+---
 
 수집 프로세스의 이번에 가져올 데이터셋 정보와 병렬 처리 로직을 좀 더 설명하면 다음과 같다.
 
@@ -335,40 +349,17 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 
 ## 데이터 분석 프로세스
 
-## EMR Cluster 설정 로직
-1. EMR Cluster를 생성하고, Pyspark Submit Step을 추가한다.
-2. Step을 Sensor가 모니터링한다.
-3. 모든 Step이 완료되면 Cluster를 종료한다.
+### 분석 로직
 
 **analyze_tlc_taxi_record.py**
 
 ![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
 
-```python
-create_job_flow = EmrCreateJobFlowOperator(
-        task_id="create_job_flow",
-        job_flow_overrides=JOB_FLOW_OVERRIDES
-    )
+**get_latest_year_partition**
 
-    add_steps = EmrAddStepsOperator(
-        task_id="add_steps",
-        job_flow_id=create_job_flow.output,
-        steps=SPARK_STEPS,
-        wait_for_completion=True,
-    )
+**create_job_flow**
 
-    check_job_flow = EmrJobFlowSensor(
-        task_id="check_job_flow",
-        job_flow_id=create_job_flow.output
-    )
-
-    remove_cluster = EmrTerminateJobFlowOperator(
-        task_id="remove_cluster",
-        job_flow_id=create_job_flow.output
-    )
-
-create_job_flow >> add_steps >> check_job_flow >> remove_cluster
-```
+**preprocess**
 
 ## Spark Submit 로직
 Spark Submit 로직은 2 부분으로 구성된다.
