@@ -200,7 +200,7 @@ with DAG(
         job_flow_overrides=JOB_FLOW_OVERRIDES
     )
 
-    with TaskGroup('step0', tooltip="Task for Preprocess Data") as step0:
+    with TaskGroup('preprocess', tooltip="Task for Preprocess Data") as preprocess:
         make_preprocess_data_definition = PythonOperator(
             task_id="make_preprocess_data_definition",
             python_callable=make_preprocess_data_definition
@@ -213,7 +213,7 @@ with DAG(
             wait_for_completion=True,
         )
 
-    with TaskGroup('step1', tooltip="Task for Elapsed Time") as step1:
+    with TaskGroup('analyze_1', tooltip="Task for Elapsed Time") as analyze_1:
         make_analyze_elapsed_time_definition = PythonOperator(
             task_id="make_analyze_elapsed_time_definition",
             python_callable=make_analyze_elapsed_time_definition
@@ -226,7 +226,7 @@ with DAG(
             wait_for_completion=True,
         )
 
-    with TaskGroup('step2', tooltip="Task for Market Share") as step2:
+    with TaskGroup('analyze_2', tooltip="Task for Market Share") as analyze_2:
         make_analyze_market_share_definition = PythonOperator(
             task_id="make_analyze_market_share_definition",
             python_callable=make_analyze_market_share_definition
@@ -239,7 +239,7 @@ with DAG(
             wait_for_completion=True,
         )
 
-    with TaskGroup('step3', tooltip="Task for Popular Location") as step3:
+    with TaskGroup('analyze_3', tooltip="Task for Popular Location") as analyze_3:
         make_analyze_popular_location_definition = PythonOperator(
             task_id="make_analyze_popular_location_definition",
             python_callable=make_analyze_popular_location_definition
@@ -266,8 +266,8 @@ with DAG(
 chain(
     get_latest_year_partition,
     create_job_flow,
-    step0,
-    [step1, step2, step3],
+    preprocess,
+    [analyze_1, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
