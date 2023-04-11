@@ -9,6 +9,7 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.models import Variable
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 
 class DBHandler(logging.StreamHandler):
@@ -195,3 +196,10 @@ with DAG(
     get_latest_dataset_id >> get_urls
 
     fetch.expand(url=get_urls)
+
+    trigger_dag = TriggerDagRunOperator(
+        task_id="trigger_analyze_tlc_taxi_record_dag",
+        trigger_dag_id="analyze_tlc_taxi_record"
+    )
+
+    fetch >> trigger_dag
