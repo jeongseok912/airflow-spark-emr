@@ -47,7 +47,7 @@ TLC Taxi Record 데이터셋 중 우버(Uber), 리프트(Lyft) 같은 차량공�
 <br/>
 
 # 아키텍처
-![image](https://user-images.githubusercontent.com/22818292/229718534-f9494483-ac64-4ffd-bd4f-b4f82f6d6e14.png)
+![image](https://user-images.githubusercontent.com/22818292/231055878-35521a60-e689-4d8e-b058-40929346d8b3.png)
 
 ## 서비스 및 용도
 
@@ -114,8 +114,8 @@ Airflow DAG, Spark script에 대한 저장소 및 배포 자동화를 위해 사
 ## 프로세스 개요
 자세한 로직에 대한 설명은 아래에서 하고 간략하게 프로세스가 어떻게 작동하는지 알아본다.
 
-### DAG 개발 및 배포 프로세스
-1. Local에서 DAG Script 작성 후 GitHub에 Push를 하게 되면 GitHub Actions을 활용하여 Airflow Cluster Node들에 DAG가 배포된다.
+### Airflow / Spark Script 개발 및 배포 프로세스
+1. Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되면, GitHub Actions을 활용하여 Airflow Cluster Node들에 Airflow DAG가 배포되고, S3에 Spark Script가 배포된다.
 
 ### 데이터 수집 프로세스
 1. RDS (MySQL)에서 수집할 데이터셋에 대한 링크 정보를 가져온다.
