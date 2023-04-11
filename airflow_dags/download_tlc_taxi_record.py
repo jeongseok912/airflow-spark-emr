@@ -186,11 +186,11 @@ with DAG(
     start_date=datetime(2022, 2, 28),
     schedule="@daily",
     catchup=False,
-    tags=["tlc taxi record"]
+    tags=["tlc_taxi_record"]
 ) as dag:
 
     get_latest_dataset_id = get_latest_dataset_id()
-    get_urls = get_url(num=3)
+    get_urls = get_url(num=2)
 
     get_latest_dataset_id >> get_urls
 
