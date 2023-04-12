@@ -83,6 +83,32 @@ def make_analyze_elapsed_time_definition(**context):
     return STEP
 
 
+def make_prepare_eta_prediction_definition(**context):
+    latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
+
+    STEP = [
+        {
+            "Name": "Prepare Data for ETA Prediction",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/prepare_eta_prediction.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        }
+    ]
+
+    return STEP
+
+
 def make_analyze_market_share_definition(**context):
     latest_year = context["ti"].xcom_pull(task_ids='get_latest_year_partition')
 
@@ -212,6 +238,7 @@ with DAG(
             job_flow_id=create_job_flow.output,
             steps=make_preprocess_data_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool'
         )
 
     with TaskGroup('analyze_1', tooltip="Task for Elapsed Time") as analyze_1:
@@ -225,6 +252,23 @@ with DAG(
             job_flow_id=create_job_flow.output,
             steps=make_analyze_elapsed_time_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=3
+        )
+
+    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
+        make_prepare_eta_prediction_definition = PythonOperator(
+            task_id="make_prepare_eta_data_definition",
+            python_callable=make_prepare_eta_prediction_definition
+        )
+
+        prepare_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_eta_prediction",
+            job_flow_id=create_job_flow.output,
+            steps=make_prepare_eta_prediction_definition.output,
+            wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=3
         )
 
     with TaskGroup('analyze_2', tooltip="Task for Market Share") as analyze_2:
@@ -238,6 +282,8 @@ with DAG(
             job_flow_id=create_job_flow.output,
             steps=make_analyze_market_share_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=2
         )
 
     with TaskGroup('analyze_3', tooltip="Task for Popular Location") as analyze_3:
@@ -251,6 +297,8 @@ with DAG(
             job_flow_id=create_job_flow.output,
             steps=make_analyze_popular_location_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=1
         )
 
     check_job_flow = EmrJobFlowSensor(
@@ -268,7 +316,7 @@ chain(
     get_latest_year_partition,
     create_job_flow,
     preprocess,
-    [analyze_1, analyze_2, analyze_3],
+    [analyze_1, prepare_eta_prediction, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
