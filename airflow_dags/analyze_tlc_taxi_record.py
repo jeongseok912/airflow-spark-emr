@@ -239,7 +239,8 @@ with DAG(
             job_flow_id=create_job_flow.output,
             steps=make_preprocess_data_definition.output,
             wait_for_completion=True,
-            pool='preprocess_pool'
+            pool='preprocess_pool',
+            pool_slots=2
         )
 
     with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
