@@ -512,7 +512,7 @@ Task 레벨에서의 병렬 처리를 다룰 예정이지만,
 
 **analyze_tlc_taxi_record.py**
 
-![image](https://user-images.githubusercontent.com/22818292/231521036-02dcf4b4-4f85-4a99-8c69-f643a5544f55.png)
+![image](https://user-images.githubusercontent.com/22818292/231532178-1d487d7c-5cd9-428f-a4af-476d2d03b4db.png)
 
 ```python
 ) as dag:
@@ -540,14 +540,14 @@ Task 레벨에서의 병렬 처리를 다룰 예정이지만,
             wait_for_completion=True
         )
 
-    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
+    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_prediction:
         make_prepare_eta_prediction_definition = PythonOperator(
-            task_id="make_prepare_eta_data_definition",
+            task_id="make_prepare_eta_prediction_definition",
             python_callable=make_prepare_eta_prediction_definition
         )
 
-        prepare_elpased_data_for_eta_prediction = EmrAddStepsOperator(
-            task_id="prepare_elpased_data_for_eta_prediction",
+        prepare_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_eta_prediction",
             job_flow_id=create_job_flow.output,
             steps=make_prepare_eta_prediction_definition.output,
             wait_for_completion=True,
@@ -615,7 +615,7 @@ chain(
     get_latest_year_partition,
     create_job_flow,
     preprocess,
-    [prepare_eta_prediction, analyze_1, analyze_2, analyze_3],
+    [prepare_prediction, analyze_1, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
@@ -692,11 +692,39 @@ S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 �
 
 <br/>
 
-**prepare_eta_prediction**
+**prepare_prediction**
 
 - make_prepare_eta_prediction_definition
 
-- prepare_el
+  `prepare_eta_prediction` Task 실행을 위한 동적 Spark Submit 정의를 생성한다.
+  
+  ```yaml
+      STEP = [
+        {
+            "Name": "Prepare Data for ETA Prediction",
+            "ActionOnFailure": "CONTINUE",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "cluster",
+                    f"s3://{bucket}/{script}/prepare_eta_prediction.py",
+                    "--src",
+                    f"s3://{bucket}/{output}/preprocess/{latest_year}/",
+                    "--output",
+                    f"s3://{bucket}/{output}/analyze/{latest_year}/",
+                ]
+            }
+        }
+    ]
+  ```
+
+- prepare_eta_prediction
+
+  ML 학습용 데이터(예정도착시간(ETA) 예측을 위해 가공된 데이터)를 생성하는 Spark Job을 실행한다.
+  
+<br/>
 
 **analyze_1**
 
@@ -728,7 +756,7 @@ S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 �
   
 - analyze_elapsed_time
 
-  택시의 콜 요청장소 도착소요시간에 대한 분석 데이터(경쟁사별, 월별 평균 도착소요시간 데이터)와 ML 학습용 데이터(예정도착시간(ETA) 예측을 위해 가공된 데이터)를 생성하는 Spark Job을 실행한다.
+  택시의 콜 요청장소 도착소요시간에 대한 분석 데이터(경쟁사별, 월별 평균 도착소요시간 데이터)를 생성하는 Spark Job을 실행한다.
 
 <br/>
 
@@ -809,6 +837,77 @@ EMR Cluster가 Job들을 수행 후 유휴 상태인지 (`WAITING` 상태) 확�
 **remove_cluster**
 
 EMR Cluster를 종료한다.
+
+<br/>
+<br/>
+
+## 병렬처리 로직
+
+![image](https://user-images.githubusercontent.com/22818292/231542954-30995512-132b-4e1e-a3d6-fa0a73b2bb90.png)
+
+`preprocess_data` Task 실행 이후 4개의 Task가 병렬로 처리되는데, 이 때 4개의 Task가 동시에 실행되지는 않는다.
+
+Airflow는 Task가 동시에 많이 실행되면 리소스 부족으로 Airflow Cluster나 다른 Task 실행에 영향을 미칠 수 있기 때문에 동시에 실행되는 Task 수에 제한을 줄 수가 있다.
+
+> 현재 구성은 Task들이 EMR Step을 Trigger하는 용도라 Airflow Cluster의 Resource 문제는 없다.
+
+하지만 아래와 같은 케이스가 있을 수 있으므로, 병렬처리 케이스를 다뤄보기 위해 논리를 구현하였다.
+
+<br/>
+<br/>
+
+Task에 의해 Trigger된 총 4개의 분석 데이터를 생성하는 각 Spark Job은 모두 전처리된 데이터 경로인 S3의 `output/preprocess/{연도 파티션}` 경로에서 데이터를 읽는다.
+
+![image](https://user-images.githubusercontent.com/22818292/231532969-e4c66107-dae3-475f-a3f4-f455ab6e1c53.png)
+
+이 4개의 Spark Job이 동시에 동일 경로 데이터를 읽기 때문에, Connection을 분산하기 위해 최대 2개의 Spark Job만 동시에 읽을 수 있도록 구현하였다.
+
+<br/>
+<br/>
+
+현재 Airflow는 2개의 Slot을 가진 `preprocess_pool` Pool이 구성되어 있다.
+
+![image](https://user-images.githubusercontent.com/22818292/231529130-c8058d87-2210-4353-bba1-2d467d57fe3e.png)
+
+Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `analyze_market_share`, `analyze_popular_location` Task는 이 `preprocess_pool` Pool의 Slot에서 실행된다.
+
+단, `preprocess_pool` Pool이 2개의 Slot을 가지고 있기 때문에 2개의 Task만 동시에 실행된다.
+
+따라서 실행 우선 순위가 필요하고, 우선 순위는 다음과 같다.
+
+<br/>
+
+[ `prepare_eta_prediction`, `analyze_elapsed_time` ] >> `analyze_market_share` >> `analyze_popular_location`
+
+[ 3, 3 ] >> 2 >> 1
+
+<br/>
+
+`prepare_eta_prediction`, `analyze_elapsed_time` Task가 동시에 실행되어서 하나가 완료되어 빈 Slot이 발생하면 
+
+`analyze_market_share` Task가 실행되고
+
+또 빈 Slot이 발생하면 `analyze_popular_location` Task가 실행된다.
+
+<br/>
+
+이 프로젝트의 경우,
+
+`prepare_eta_prediction` Task의 Spark Job이 처리하는 데이터양이 많아 한 개의 Slot을 오랫동안 차지하고 실행하며, 
+
+나머지 한 Slot으로 `analyze_elapsed_time` >> `analyze_market_share` >> `analyze_popular_location` 순서로 실행된다.
+
+
+<br/>
+<br/>
+
+![image](https://user-images.githubusercontent.com/22818292/231545674-611ef336-bcb6-44b2-a7ee-5730b0e13bec.png)
+
+이 때, EMR Cluster의 `StepConcurrencyLevel`이 `3` 이기 때문에, Airflow Task (Spark Job) 2개가 동시 실행이 가능하다.
+
+`StepConcurrencyLevel`이 Airflow Task (Spark Job) 동시 실행 가능 갯수보다 작으면, EMR Step이 `Pending`되면서 결국 순차 실행된다.
+
+따라서, Airflow의 병렬 처리와 EMR Cluster의 병렬 처리 조건을 잘 고려해서 설계해야 한다.
 
 <br/>
 <br/>
