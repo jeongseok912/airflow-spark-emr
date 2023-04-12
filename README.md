@@ -7,6 +7,10 @@
 <br/>
 <br/>
 
+
+
+
+
 # 시나리오
 
 > **TLC Taxi Record Data**
@@ -78,6 +82,10 @@ ETA(예상도착시간)를 예측하는 ML 학습용 데이터를 생성한다.
 <br/>
 <br/>
 
+
+
+
+
 # 서비스 및 용도
 
 사용하는 서비스와 해당 서비스가 사용되는 용도는 다음과 같다.
@@ -100,83 +108,122 @@ Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수
 
 데이터셋 수집 시 Custom log를 저장하는 테이블이다.
 
-![image](https://user-images.githubusercontent.com/22818292/230822649-95017a11-3ae5-40b7-a0a5-d928f1ba8e52.png)
+![image](https://user-images.githubusercontent.com/22818292/231337475-54b18136-4324-4580-83e4-4a477801ccf1.png)
+
+![image](https://user-images.githubusercontent.com/22818292/231337309-ee7694f8-752d-4ce5-b251-bfa88129c15e.png)
 
 <br/>
 
 ### AWS - S3
 수집한 데이터셋 저장, 가공한 데이터셋 저장 용도
 
-데이터 및 요청을 파이셔닝하는데 유용하며, DataLake로 활용을 많이 한다.
+아래와 같은 구조를 가진 DataLake로서 활용하며, 월별 데이터를 수집하지만, 대용량 처리를 위해 연도 단위로 파티셔닝 한다.
 
+![image](https://user-images.githubusercontent.com/22818292/231336278-4637210b-7074-451e-a408-6b18bfd743b4.png)
+ 　 ![image](https://user-images.githubusercontent.com/22818292/231336340-65904244-092a-4f13-b06f-2257adb083ae.png)
+
+<br/>
 
 ### AWS - EC2
-Airflow Multi Node Cluster 구성을 위해 사용
 
-Airflow 관리형 서비스인 MWAA를 쓸 수 있지만, Airflow Cluster에 대한 이해도를 높이기 위해 여러 대의 EC2로 날 것으로 구성한다.
+Airflow Cluster 구성을 위해 사용
+
+Airflow 관리형 서비스인 AWS MWAA를 쓸 수 있지만, Airflow Cluster에 대한 이해도를 높이기 위해 여러 대의 EC2로 날 것으로 직접 구축하였다.
+
+<br/>
   
 ### AWS - EMR
-Spark 사용 목적
 
-Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. EMR은 서비스 하나로 Spark, Hadoop, YARN, Jupyter Notebook 같은 다양한 Application을 간편하게 구성할 수 있도록 도와준다.
+관리형 Spark 서비스 사용 목적
 
-또한 Application에서 제공하는 모니터링 UI를 제공하고, S3에 로깅도 해주기 때문에 debugging도 용이하다. 
+Spark Cluster까지 EC2 날 것으로 구성하려면 피로도가 높다. 
+
+EMR은 서비스 하나로 Spark, Hadoop, YARN, Jupyter Notebook 같은 다양한 Application을 간편하게 구성할 수 있도록 도와주고, Application에서 제공하는 모니터링 UI를 제공하며, S3에 로깅도 해주기 때문에 debugging도 용이하다. 
+
+<br/>
 
 ### Airflow
-데이터 수집 프로세스와 분석 프로세스에 대한 Workflow 정의 및 스케줄링에 사용한다.
+
+데이터 수집 프로세스와 분석 프로세스에 대한 Workflow 정의 및 스케줄링에 사용
 
 이 각 프로세스는 각 DAG와 매핑된다.
 
 - 데이터 수집 프로세스 = 데이터 수집 DAG
 - 데이터 분석 프로세스 = 데이터 가공 및 분석 DAG
 
-### Spark
-S3에 적재된 대량의 데이터셋을 분석하고 가공하는데 사용한다.
+<br/>
 
-MPP DB인 Redshift에 저장하고 시각화까지 하는 파이프라인을 만들 수 있지만, 프로젝트의 범위를 S3에 추출하는 것으로 제한한다.
+### Spark
+
+S3에 적재된 대량의 데이터셋을 연도 단위로 분석하고 가공하는데 사용
+
+<br/>
 
 ### GitHub
-Airflow DAG, Spark script에 대한 저장소 및 배포 자동화를 위해 사용한다.
+
+Airflow DAG, Spark script에 대한 저장소 및 배포 자동화를 위해 사용
 <br/>
 <br/>
 <br/>
 
-## 프로세스 개요
-자세한 로직에 대한 설명은 아래에서 하고 간략하게 프로세스가 어떻게 작동하는지 알아본다.
+
+
 
 # 아키텍처
-![image](https://user-images.githubusercontent.com/22818292/231055878-35521a60-e689-4d8e-b058-40929346d8b3.png)
+
+![image](https://user-images.githubusercontent.com/22818292/231339407-38097f4e-d91f-4615-b43d-20daf4c1afa3.png)
+
+## 프로세스 개요
+
+세부 설명은 아래에서 하고, 전체적인 큰 프로세스를 살펴보면 다음과 같다.
+
+<br/>
 
 ### Airflow / Spark Script 개발 및 배포 프로세스
-1. Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되면, GitHub Actions을 활용하여 Airflow Cluster Node들에 Airflow DAG가 배포되고, S3에 Spark Script가 배포된다.
+
+Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되면, GitHub Actions을 활용하여 Airflow Cluster Node들에 Airflow DAG가 배포되고, S3에 Spark Script가 배포된다.
 
 ### 데이터 수집 프로세스
-1. RDS (MySQL)에서 수집할 데이터셋에 대한 링크 정보를 가져온다.
+
+1. RDS (MySQL)의 데이터셋 메타정보 테이블에서 수집할 데이터셋에 대한 링크 정보를 가져온다.
+
 2. 수집한 데이터셋을 S3에 저장한다.
 
 ### 데이터 분석 프로세스
 1. EMR Cluster를 생성하고 EMR의 Spark submit Step을 실행한다.
-2. 실행된 Spark Application은 데이터 수집 프로세스에서 S3에 저장한 데이터셋을 Source로 읽어들여 분석하고 가공한다.
+
+2. 실행된 EMR Spark Application은 S3에서 Spark Script와 데이터를 읽어 분석 및 가공한다.
+
 3. 가공된 데이터셋을 S3에 저장한다.
 <br/>
 <br/>
 <br/>
 
+
 ## Cluster 아키텍처
+
 ### Airflow Cluster
-Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.<br/>
-무거운 작업은 EMR로 위임할 것이기 때문에 Airflow Cluster 사양이 굳이 높을 필요는 없다.<br/>
-비용 및 리소스 낭비를 줄이기 위해 높은 사양은 사용하지 않는다.<br/>
-<br/>
+
+Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
+
+무거운 작업은 EMR로 위임할 것이기 때문에 Airflow Cluster 사양이 굳이 높을 필요는 없다.
+
+비용 및 리소스 낭비를 줄이기 위해 높은 사양은 사용하지 않는다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230561284-e3cd3750-e8fa-4b41-ae2f-7d021cc8c7aa.png)
 
 ![image](https://user-images.githubusercontent.com/22818292/230561536-4a0e6804-dcb2-4a94-ae42-a139ef0cf6d7.png)
+
 <br/>
 <br/>
 
-Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다음과 같다.<br/>
-내용 편의를 위해 DAG 개발 및 배포 프로세스에 대한 아키텍처도 함께 설명한다.
+### Airflow Cluster 컴포넌트 및 프로세스
+
+Airflow Cluster를 이루는 컴포넌트들을 좀 더 자세히 살펴보면 다음과 같다.
+
+> **참고**
+> 
+> 내용 편의를 위해 현재 섹션에서 **Airflow DAG / Spark Script 개발 및 배포 프로세스**에 대한 아키텍처도 함께 설명한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230565352-2894ce92-4a1e-4dd8-9e8f-4c70b72d2a37.png)
 
@@ -186,34 +233,52 @@ Airflow Cluster를 이루는 Component들을 좀 더 자세히 살펴보면 다�
 -  Executor : 그림에 보이지 않는데 Executor Logic은 Scheduler 프로세스 안에서 실행된다. `CeleryExecutor`로 구성하였으며, Celery Worker에 Task 실행을 Push한다. 
 -  Celery Flower : Celery Worker를 모니터링할 수 있는 Web UI<br/><br/>
   ![image](https://user-images.githubusercontent.com/22818292/230565853-30f5cb3a-5927-449c-a6d0-c15759608041.png)
-  <br/>
+  
+<br/>
 
 **airflow-borker** : `CeleryExecutor` 사용 시 Broker와 Result backend 설정이 필요하다. 이 역할로 Redis를 사용한다. 
 -  Broker : Task Queue로, 별다른 설정없이 `default` Queue를 사용
 -  Result backend : Task 상태를 저장한다.
 
+<br/>
+
 **airflow-worker\*** : 할당된 Task를 실행한다.
 
-**GitHub Actions Runner** : `CeleryExecutor` 사용 시, Celery Worker가 DAG 폴더에 접근할 수 있어야 한다. 그리고 Node들이 동기화 된 DAG를 봐라봐야 한다. <br/>
-예를 들어 Primary Node가 바라보는 DAG가 최신화 되어 있고, Worker Node가 바라보는 DAG는 최신화가 안 되어 있다면 Web UI에서는 최신화 된 DAG Logic을 볼 수 있지만, Task 실행 시 최신화 된 Logic을 실행하지 못한다. <br/>
-따라서 DAG 개발 및 배포의 편의성 측면과 DAG Sync 측면에서 GitHub Repository와 GitHub Actions를 사용한다. Push가 일어났을 때 Airflow Cluster의 모든 Node들의 DAG 폴더를 자동으로 Update 및 Sync 할 수 있도록 하기 위해서 각 Node에 GitHub Actions Self-hosted Runner를 설치하고 구성한다.
+<br/>
 
-**Statsd Exporter** : Airflow Metric을 제공하는 프로세스이다. 이후에 Prometheus와 Grafana와 연동할 예정이다.
+**GitHub Actions Runner** : `CeleryExecutor` 사용 시, Celery Worker가 DAG 폴더에 접근할 수 있어야 한다. 그리고 Node들이 동기화 된 DAG를 봐라봐야 한다.
+
+예를 들어 
+
+Primary Node가 바라보는 DAG가 최신화 되어 있고, Worker Node가 바라보는 DAG는 최신화가 안 되어 있다면 Web UI에서는 최신화 된 DAG Logic을 볼 수 있지만, Task 실행 시 최신화 된 Logic을 실행하지 못한다.
+
+따라서 DAG 개발 및 배포의 편의성 측면과 DAG Sync 측면에서 GitHub 저장소와 GitHub Actions를 사용한다. 
+
+Push가 일어났을 때 Airflow Cluster의 모든 Node들의 DAG 폴더를 자동으로 Update 및 Sync 할 수 있도록 하기 위해서 각 Node에 GitHub Actions Self-hosted Runner를 설치하고 구성한다.
+
+<br/>
+
+**Statsd Exporter** : Airflow Metric을 제공하는 프로세스이다. 이후에 Prometheus와 Grafana와 연동할 예정이라서 미리 구성해두었다.
+
+<br/>
 
 **RDS** : RDS (MySQL)의 `airflow` DB를 Airflow 메타데이터를 저장하는 DB로 사용한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/229800380-274fff08-cf35-470c-9dab-36d25c66d86a.png)
+
+<br/>
 <br/>
 <br/>
 
 ### EMR Cluster
-EMR Cluster는 Spark + YARN(default)만 사용할 예정이다.<br/>
-Cluster Resource 내에서 데이터셋의 크기에 따라 탄력적으로 조절하는 방식으로 운영하기 위해, 기본 사양은 Core Node 2대와 `m5.xlarge` 유형으로 구성한다.
-<br/>
+
+아래에 정의한 `JOB_FLOW_OVERRIDES` 정의를 이용하여 Spark만 사용할 예정이다.
+
+Spark가 수집되는 월별 데이터를 연도 파티션 단위로 처리할 예정이기 때문에, 연도 파티션에 데이터가 누적될수록 Spark Cluster Node 리소스도 꽤 필요하다.
+
+따라서 Node 사양은 `m5.xlarge` 유형을 사용하고, 2대의 Core Node로 구성한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230817404-a314a541-4598-4c96-981e-06fc7b06fa8c.png)
-
-<br/>
 
 ```yaml
 JOB_FLOW_OVERRIDES = {
@@ -265,6 +330,16 @@ JOB_FLOW_OVERRIDES = {
 }
 ```
 <br/>
+<br/>
+<br/>
+
+
+
+
+
+
+
+
 
 # 파일 구조
 
