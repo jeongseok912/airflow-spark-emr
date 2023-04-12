@@ -779,6 +779,8 @@ EMR Cluster를 종료한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/231222245-793006b0-fe96-459a-a587-21d43fb412f8.png)
 
+![image](https://user-images.githubusercontent.com/22818292/231358350-0f001240-3416-487c-9a0c-633ae14a01a6.png)
+
 <br/>
 
 ### elapsed
@@ -797,6 +799,8 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 ![image](https://user-images.githubusercontent.com/22818292/231223700-b7c34733-1855-4b56-b9dc-906c0baa783e.png)
 
+![image](https://user-images.githubusercontent.com/22818292/231358439-352991f7-65dc-4155-a11a-cf17643b8ae4.png)
+
 <br/>
 
 ### popular_location
@@ -806,3 +810,6 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 랭킹 차트, 트리맵 등으로 시각화하기 적합하다.
 
 ![image](https://user-images.githubusercontent.com/22818292/231352918-cd537088-0f32-49fc-bd36-8b1650620ff0.png)
+
+![image](https://user-images.githubusercontent.com/22818292/231355735-9a5a15a5-a83f-4da6-ac23-3d6db16571d9.png)
+
