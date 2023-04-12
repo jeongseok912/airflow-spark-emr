@@ -185,7 +185,7 @@ def fetch(url, **context):
 with DAG(
     'download_tlc_taxi_record',
     start_date=datetime(2022, 2, 28),
-    schedule="55 11 * * *",
+    schedule="@daily",
     catchup=False,
     tags=["tlc_taxi_record"]
 ) as dag:
