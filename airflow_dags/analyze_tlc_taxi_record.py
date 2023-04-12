@@ -27,7 +27,6 @@ def get_latest_year_partition():
     prefixes = s3.list_prefixes(
         bucket_name=bucket, prefix=prefix, delimiter='/')
     latest_year = max([int(prefix.split('/')[-2]) for prefix in prefixes])
-    latest_year = 2020
 
     return latest_year
 
@@ -247,8 +246,8 @@ with DAG(
             python_callable=make_prepare_eta_prediction_definition
         )
 
-        prepare_elpased_data_for_eta_prediction = EmrAddStepsOperator(
-            task_id="prepare_elpased_data_for_eta_prediction",
+        prepare_elapased_data_for_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_elapased_data_for_eta_prediction",
             job_flow_id=create_job_flow.output,
             steps=make_prepare_eta_prediction_definition.output,
             wait_for_completion=True,
