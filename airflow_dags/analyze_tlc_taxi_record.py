@@ -242,6 +242,21 @@ with DAG(
             pool='preprocess_pool'
         )
 
+    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
+        make_prepare_eta_prediction_definition = PythonOperator(
+            task_id="make_prepare_eta_data_definition",
+            python_callable=make_prepare_eta_prediction_definition
+        )
+
+        prepare_elpased_data_for_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_elpased_data_for_eta_prediction",
+            job_flow_id=create_job_flow.output,
+            steps=make_prepare_eta_prediction_definition.output,
+            wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=3
+        )
+
     with TaskGroup('analyze_1', tooltip="Task for Elapsed Time") as analyze_1:
         make_analyze_elapsed_time_definition = PythonOperator(
             task_id="make_analyze_elapsed_time_definition",
@@ -252,21 +267,6 @@ with DAG(
             task_id="analyze_elapsed_time",
             job_flow_id=create_job_flow.output,
             steps=make_analyze_elapsed_time_definition.output,
-            wait_for_completion=True,
-            pool='preprocess_pool',
-            priority_weight=3
-        )
-
-    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
-        make_prepare_eta_prediction_definition = PythonOperator(
-            task_id="make_prepare_eta_data_definition",
-            python_callable=make_prepare_eta_prediction_definition
-        )
-
-        prepare_eta_prediction = EmrAddStepsOperator(
-            task_id="prepare_eta_prediction",
-            job_flow_id=create_job_flow.output,
-            steps=make_prepare_eta_prediction_definition.output,
             wait_for_completion=True,
             pool='preprocess_pool',
             priority_weight=3
@@ -317,7 +317,7 @@ chain(
     get_latest_year_partition,
     create_job_flow,
     preprocess,
-    [analyze_1, prepare_eta_prediction, analyze_2, analyze_3],
+    [prepare_eta_prediction, analyze_1, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
