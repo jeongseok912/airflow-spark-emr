@@ -643,7 +643,7 @@ S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 �
 <br/>
 
 ---
-전처리된 데이터를 기반으로 3가지 주제에 대한 분석 데이터를 생성한다.
+이후에는 전처리된 데이터를 기반으로 3가지 주제에 대한 분석 데이터를 생성한다.
 
 3가지 주제에 대한 분석은 전처리된 데이터를 공통으로 사용하기 때문에 병렬 처리로 진행한다.
 
@@ -761,7 +761,7 @@ EMR Cluster가 Job들을 수행 후 유휴 상태인지 (`WAITING` 상태) 확�
 
 EMR Cluster를 종료한다.
 
-
+<br/>
 <br/>
 
 ## 최종 결과
@@ -769,7 +769,9 @@ EMR Cluster를 종료한다.
 
 ![image](https://user-images.githubusercontent.com/22818292/231221847-d4fc654b-3f64-4ff1-b33d-5a0954c5ceb9.png)
 
-### `avg_elpased_by_month`
+<br/>
+
+### avg_elpased_by_month
 
 경쟁사와 자사의 택시의 콜 요청장소 도착소요시간을 비교 분석하는 데이터
 
@@ -779,7 +781,7 @@ EMR Cluster를 종료한다.
 
 <br/>
 
-### `elapsed`
+### elapsed
 
 ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이터
 
@@ -787,7 +789,7 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 <br/>
 
-### `market_share`
+### market_share
 
 경쟁사별 / 월별 점유율을 나타내는 데이터
 
@@ -797,6 +799,10 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 <br/>
 
-### `popular_location`
+### popular_location
 
 택시 수요가 많은 인기 지역 및 급상승 인기 지역 데이터
+
+랭킹 차트, 트리맵 등으로 시각화하기 적합하다.
+
+![image](https://user-images.githubusercontent.com/22818292/231352918-cd537088-0f32-49fc-bd36-8b1650620ff0.png)
