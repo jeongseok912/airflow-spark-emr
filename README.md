@@ -200,6 +200,7 @@ Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되�
 <br/>
 
 
+
 ## Cluster 아키텍처
 
 ### Airflow Cluster
@@ -209,6 +210,16 @@ Airflow Cluster는 아래와 같은 EC2 Node들로 구성된다.
 무거운 작업은 EMR로 위임할 것이기 때문에 Airflow Cluster 사양이 굳이 높을 필요는 없다.
 
 비용 및 리소스 낭비를 줄이기 위해 높은 사양은 사용하지 않는다.
+
+<br/>
+
+> 데이터 수집 프로세스에서는 EMR Cluster를 사용하지 않기 때문에 Airflow Worker Node의 리소스를 사용하는데, 
+>
+> Task의 Memory 사용을 최적화하여 Worker Node의 사양을 낮게 유지할 수 있도록 하였다.
+>
+> https://velog.io/@jskim/Airflow-Task-Memory-사용-최적화하기
+
+<br/>
 
 ![image](https://user-images.githubusercontent.com/22818292/230561284-e3cd3750-e8fa-4b41-ae2f-7d021cc8c7aa.png)
 
@@ -355,6 +366,7 @@ airflow-spark-emr
     ├── analyze_elapsed_time.py
     ├── analyze_market_share.py
     ├── analyze_popular_location.py
+    ├── prepare_eta_prediction.py
     └── preprocess_data.py
 ```
 
@@ -373,6 +385,8 @@ airflow-spark-emr
   - `analyze_market_share.py` : 시장 점유율 분석 데이터를 생성하는 Script
 
   - `analyze_popular_location.py` : 인기 지역 분석 데이터를 생성하는 Script
+  
+  - `prepare_eta_prediction.py` : ETA(도착예정시간) 예측을 위한 데이터를 생성하는 Script
   
   - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script
   
@@ -486,11 +500,19 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
 
 ## 데이터 분석 프로세스
 
+데이터 분석 프로세스에서는 Airflow Pool & Slot과 EMR StepConcurrencyLevel을 이용한 병렬 처리 케이스를 포함한다.
+
+Task 레벨에서의 병렬 처리를 다룰 예정이지만, 
+
+병렬 처리 Logic을 DAG 레벨로 분리한 뒤, 동일한 논리를 적용하면 DAG 레벨에서의 병렬 처리도 별반 다르지 않다.
+
+<br/>
+
 ### 분석 로직
 
 **analyze_tlc_taxi_record.py**
 
-![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
+![image](https://user-images.githubusercontent.com/22818292/231521036-02dcf4b4-4f85-4a99-8c69-f643a5544f55.png)
 
 ```python
 ) as dag:
@@ -515,7 +537,22 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
             task_id="preprocess_data",
             job_flow_id=create_job_flow.output,
             steps=make_preprocess_data_definition.output,
+            wait_for_completion=True
+        )
+
+    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
+        make_prepare_eta_prediction_definition = PythonOperator(
+            task_id="make_prepare_eta_data_definition",
+            python_callable=make_prepare_eta_prediction_definition
+        )
+
+        prepare_elpased_data_for_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_elpased_data_for_eta_prediction",
+            job_flow_id=create_job_flow.output,
+            steps=make_prepare_eta_prediction_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=3
         )
 
     with TaskGroup('analyze_1', tooltip="Task for Elapsed Time") as analyze_1:
@@ -529,6 +566,8 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
             job_flow_id=create_job_flow.output,
             steps=make_analyze_elapsed_time_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=3
         )
 
     with TaskGroup('analyze_2', tooltip="Task for Market Share") as analyze_2:
@@ -542,6 +581,8 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
             job_flow_id=create_job_flow.output,
             steps=make_analyze_market_share_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=2
         )
 
     with TaskGroup('analyze_3', tooltip="Task for Popular Location") as analyze_3:
@@ -555,6 +596,8 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
             job_flow_id=create_job_flow.output,
             steps=make_analyze_popular_location_definition.output,
             wait_for_completion=True,
+            pool='preprocess_pool',
+            priority_weight=1
         )
 
     check_job_flow = EmrJobFlowSensor(
@@ -572,7 +615,7 @@ chain(
     get_latest_year_partition,
     create_job_flow,
     preprocess,
-    [analyze_1, analyze_2, analyze_3],
+    [prepare_eta_prediction, analyze_1, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
@@ -643,11 +686,17 @@ S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 �
 <br/>
 
 ---
-이후에는 전처리된 데이터를 기반으로 3가지 주제에 대한 분석 데이터를 생성한다.
+이후에는 전처리된 데이터를 기반으로 4가지 주제에 대한 분석 데이터를 생성한다.
 
-3가지 주제에 대한 분석은 전처리된 데이터를 공통으로 사용하기 때문에 병렬 처리로 진행한다.
+4가지 주제에 대한 분석은 전처리된 데이터를 공통으로 사용하기 때문에 병렬 처리로 진행한다. 
 
 <br/>
+
+**prepare_eta_prediction**
+
+- make_prepare_eta_prediction_definition
+
+- prepare_el
 
 **analyze_1**
 
