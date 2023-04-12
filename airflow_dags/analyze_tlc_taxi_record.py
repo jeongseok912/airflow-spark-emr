@@ -240,14 +240,14 @@ with DAG(
             wait_for_completion=True
         )
 
-    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_eta_prediction:
+    with TaskGroup('prepare_eta_prediction', tooltip="Task for ETA Prediction") as prepare_prediction:
         make_prepare_eta_prediction_definition = PythonOperator(
-            task_id="make_prepare_eta_data_definition",
+            task_id="make_prepare_eta_prediction_definition",
             python_callable=make_prepare_eta_prediction_definition
         )
 
-        prepare_elapased_data_for_eta_prediction = EmrAddStepsOperator(
-            task_id="prepare_elapased_data_for_eta_prediction",
+        prepare_eta_prediction = EmrAddStepsOperator(
+            task_id="prepare_eta_prediction",
             job_flow_id=create_job_flow.output,
             steps=make_prepare_eta_prediction_definition.output,
             wait_for_completion=True,
@@ -315,7 +315,7 @@ chain(
     get_latest_year_partition,
     create_job_flow,
     preprocess,
-    [prepare_eta_prediction, analyze_1, analyze_2, analyze_3],
+    [prepare_prediction, analyze_1, analyze_2, analyze_3],
     check_job_flow,
     remove_cluster
 )
