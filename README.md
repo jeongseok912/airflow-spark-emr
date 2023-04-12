@@ -811,5 +811,5 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 ![image](https://user-images.githubusercontent.com/22818292/231352918-cd537088-0f32-49fc-bd36-8b1650620ff0.png)
 
-![image](https://user-images.githubusercontent.com/22818292/231355735-9a5a15a5-a83f-4da6-ac23-3d6db16571d9.png)
+![image](https://user-images.githubusercontent.com/22818292/231361423-0c4c975d-d362-4dcf-8113-a4ec60873b52.png)
 
