@@ -27,7 +27,6 @@ def get_latest_year_partition():
     prefixes = s3.list_prefixes(
         bucket_name=bucket, prefix=prefix, delimiter='/')
     latest_year = max([int(prefix.split('/')[-2]) for prefix in prefixes])
-    latest_year = 2020
 
     return latest_year
 
