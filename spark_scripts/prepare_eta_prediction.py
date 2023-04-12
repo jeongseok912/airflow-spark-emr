@@ -4,16 +4,20 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 
 
-def get_elapsed_data(spark, src, output):
+def get_elapsed_data_for_eta_prediction(spark, src, output):
     df = spark.read.parquet(src)
     elapsed_df = df.na.drop(subset=['request_datetime', 'on_scene_datetime'])\
         .withColumn('elapsed(m)', round((unix_timestamp('on_scene_datetime') - unix_timestamp('request_datetime')) / 60))
 
-    avg_elapsed_by_month_df = elapsed_df.groupby('Company', 'year_month')\
-        .avg('elapsed(m)')\
-        .select('Company', 'year_month', round('avg(elapsed(m))').alias('elapsed(m)'))
-    avg_elapsed_by_month_df.coalesce(1).write.option('header', 'True').mode('overwrite').csv(
-        f'{output}/avg_elapsed_by_month')
+    for_eta_df = elapsed_df.select(
+        'Company',
+        'Date',
+        'PULocationID',
+        'DOLocationID',
+        'elapsed(m)'
+    )
+    for_eta_df.coalesce(10).write.option('header', 'True').mode(
+        'overwrite').csv(f'{output}/elapsed_for_eta_prediction')
 
 
 def main():
@@ -24,10 +28,12 @@ def main():
                         help='S3 output', default='s3://tlc-taxi/output')
     args = parser.parse_args()
 
-    spark = SparkSession.builder.appName("Analyze Elapsed Time").getOrCreate()
+    spark = SparkSession.builder.appName(
+        "Prepare Data for ETA Prediction").getOrCreate()
 
-    # 소요시간 분석
-    get_elapsed_data(spark, src=args.src, output=args.output)
+    # 도착예정시간(ETA) 예측을 위한 ML 학습 데이터
+    get_elapsed_data_for_eta_prediction(
+        spark, src=args.src, output=args.output)
 
 
 if __name__ == "__main__":
