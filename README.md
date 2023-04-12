@@ -347,7 +347,7 @@ JOB_FLOW_OVERRIDES = {
 airflow-spark-emr
 ├── .github
 │   └── workflows
-│       └── checkout.yaml
+│       └── deploy.yaml
 ├── airflow_dags
 │   ├── analyze_tlc_taxi_record.py
 │   └── download_tlc_taxi_record.py
@@ -358,43 +358,72 @@ airflow-spark-emr
     └── preprocess_data.py
 ```
 
-- `checkout.yaml` : Airflow DAGs를 Airflow Cluster에, Spark Scripts를 S3에 Deploy하는 프로세스를 정의한 문서
+- `deploy.yaml` : `airflow_dags` 폴더에 있는 Airflow DAGs를 Airflow Cluster에, `spark_scripts` 폴더에 있는 Spark Scripts를 S3에 Deploy하는 프로세스를 정의한 문서
 
 - `airflow_dags` : Airflow DAGs를 담은 폴더
 
-  - `analyze_tlc_taxi_record.py` :  EMR Cluster를 생성하고, Spark를 실행하는 DAG
+  - `analyze_tlc_taxi_record.py` :  EMR Cluster를 생성하고, 데이터셋을 분석 및 가공하는 Spark Job을 실행하는 DAG
   
   - `download_tlc_taxi_Record.py` : TLC Taxi Record 데이터를 수집해서 S3에 저장하는 DAG
  
 - `spark_scripts` : Spark에서 실행할 Scripts를 담은 폴더
 
-  - `analyze_elapsed_time.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 경과시간에 대한 분석 데이터를 생성한다.
+  - `analyze_elapsed_time.py` : 소요시간에 대한 분석 데이터를 생성하는 Script
 
-  - `analyze_market_share.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 시장 점유율 분석 데이터를 생성한다.
+  - `analyze_market_share.py` : 시장 점유율 분석 데이터를 생성하는 Script
 
-  - `analyze_popular_location.py` : `preprocess_data.py` 로직을 통해 추출된 데이터를 기반으로, 인기 지역 분석 데이터를 생성한다.
+  - `analyze_popular_location.py` : 인기 지역 분석 데이터를 생성하는 Script
   
-  - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script <br/>
-   이 과정을 통해 출력되는 데이터는 분석을 위해 공통으로 쓰이는 데이터가 된다.<br/>
-   전처리 과정에서는 데이터량을 줄이기 위해 불필요한 데이터는 지우고, 분석을 위해 필요한 데이터를 생성한다.
-   
+  - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script
+  
 <br/>
 <br/>
+<br/>
+
+
+
+
+
 
 # 프로세스 세부 설명
+
+메인 프로세스는 두 가지로 구분된다.
+
+- 데이터 수집 프로세스 (`download_tlc_taxi_record` DAG)
+- 데이터 분석 프로세스 (`analyze_tlc_taxi_record` DAG)
+
+![image](https://user-images.githubusercontent.com/22818292/231347998-896f35be-b58a-4080-a507-2888732d307b.png)
+
+<br/>
+<br/>
 
 ## 데이터 수집 프로세스
 
 ### 수집 로직
 
-수집 DAG의 Task를 살펴보면 다음과 같다.
-
-<br/>
-
 **download_tlc_taxi_record.py**
 
 ![image](https://user-images.githubusercontent.com/22818292/231070462-c8d506f0-9431-4478-875b-289a044d5826.png)
 
+```python
+) as dag:
+
+    get_latest_dataset_id = get_latest_dataset_id()
+    get_urls = get_url(num=2)
+
+    get_latest_dataset_id >> get_urls
+
+    fetch = fetch.expand(url=get_urls)
+
+    trigger_dag = TriggerDagRunOperator(
+        task_id="trigger_analyze_tlc_taxi_record_dag",
+        trigger_dag_id="analyze_tlc_taxi_record"
+    )
+
+    fetch >> trigger_dag
+```
+
+<br/>
 
 **get_latest_dataset_id**
 
@@ -406,9 +435,7 @@ airflow-spark-emr
 
 `dataset_meta` 메타 테이블에서 이번 실행에 수집할 데이터셋의 링크를 가져온다.
 
-이번 실행에 수집할 데이터셋 링크는 마지막에 실행됐던 데이터셋 ID 이후 ID를 가져온다.
-
-`num` 파라미터는 몇 개의 데이터셋을 수집할 지 지정한다.
+이번 실행에 수집할 데이터셋 링크는 `get_latest_dataset_id`에서 가져온 데이터셋 ID 이후의 ID를 기준으로 `num` 파라미터에 설정된 수만큼의 데이터셋 링크를 가져온다.
 
 <br/>
 
@@ -416,9 +443,9 @@ airflow-spark-emr
 
 Dynamic Task Mapping 개념을 이용해서 데이터를 수집한다.
 
-Dynamic Task Mapping은 Runtime 때 정의된 `n`만큼의 Task를 생성한다.
+Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
 
-데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였다.
+데이터셋에 대한 수집 프로세스를 병렬로 처리하기 위하여 사용하였으며, `get_url`의 `num` 파라미터 수만큼의 데이터셋을 병렬로 수집하게 된다.
 
 <br/>
 
@@ -446,10 +473,12 @@ Dynamic Task Mapping은 Runtime 때 정의된 `n`만큼의 Task를 생성한다.
 
 <br/>
 
-### S3
-TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로 저장한다.
+### 수집 데이터
+수집 프로세스에 의해 수집된 데이터는 S3의 `source` 폴더에 연도 파티션 단위로 저장된다.
 
-데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다. (parquet는 압축률이 좋기 때문에 csv로 치면 최소 수 십 `GB` 될 것이다.)
+데이터셋은 `parquet` 포맷으로, 하나당 보통 `500MB`는 되고, 연도당 `6GB`가 넘는다.<br/>
+
+> parquet는 압축률이 좋기 때문에, CSV로 치면 최소 수 십 `GB`는 된다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230821705-2ae3a083-e6a5-4953-9dbd-35e358113f94.png)
 
@@ -463,17 +492,105 @@ TLC Taxi Record 데이터를 S3의 `source` 폴더에 연도 파티션 단위로
 
 ![image](https://user-images.githubusercontent.com/22818292/231075076-a5ccef2c-b102-41ab-a820-3460e551d38a.png)
 
+```python
+) as dag:
+
+    get_latest_year_partition = PythonOperator(
+        task_id="get_latest_year_partition",
+        python_callable=get_latest_year_partition
+    )
+
+    create_job_flow = EmrCreateJobFlowOperator(
+        task_id="create_job_flow",
+        job_flow_overrides=JOB_FLOW_OVERRIDES
+    )
+
+    with TaskGroup('preprocess', tooltip="Task for Preprocess Data") as preprocess:
+        make_preprocess_data_definition = PythonOperator(
+            task_id="make_preprocess_data_definition",
+            python_callable=make_preprocess_data_definition
+        )
+
+        preprocess_data = EmrAddStepsOperator(
+            task_id="preprocess_data",
+            job_flow_id=create_job_flow.output,
+            steps=make_preprocess_data_definition.output,
+            wait_for_completion=True,
+        )
+
+    with TaskGroup('analyze_1', tooltip="Task for Elapsed Time") as analyze_1:
+        make_analyze_elapsed_time_definition = PythonOperator(
+            task_id="make_analyze_elapsed_time_definition",
+            python_callable=make_analyze_elapsed_time_definition
+        )
+
+        analyze_elapsed_time = EmrAddStepsOperator(
+            task_id="analyze_elapsed_time",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_elapsed_time_definition.output,
+            wait_for_completion=True,
+        )
+
+    with TaskGroup('analyze_2', tooltip="Task for Market Share") as analyze_2:
+        make_analyze_market_share_definition = PythonOperator(
+            task_id="make_analyze_market_share_definition",
+            python_callable=make_analyze_market_share_definition
+        )
+
+        analyze_market_share = EmrAddStepsOperator(
+            task_id="analyze_market_share",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_market_share_definition.output,
+            wait_for_completion=True,
+        )
+
+    with TaskGroup('analyze_3', tooltip="Task for Popular Location") as analyze_3:
+        make_analyze_popular_location_definition = PythonOperator(
+            task_id="make_analyze_popular_location_definition",
+            python_callable=make_analyze_popular_location_definition
+        )
+
+        analyze_popular_location = EmrAddStepsOperator(
+            task_id="analyze_popular_location",
+            job_flow_id=create_job_flow.output,
+            steps=make_analyze_popular_location_definition.output,
+            wait_for_completion=True,
+        )
+
+    check_job_flow = EmrJobFlowSensor(
+        task_id="check_job_flow",
+        job_flow_id=create_job_flow.output,
+        target_states='WAITING'
+    )
+
+    remove_cluster = EmrTerminateJobFlowOperator(
+        task_id="remove_cluster",
+        job_flow_id=create_job_flow.output
+    )
+
+chain(
+    get_latest_year_partition,
+    create_job_flow,
+    preprocess,
+    [analyze_1, analyze_2, analyze_3],
+    check_job_flow,
+    remove_cluster
+)
+```
+
+<br/>
+
 **get_latest_year_partition**
 
 S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 연도 파티션 정보를 가져온다. 
 
-이는 연도 파티션 단위로 Spark Job이 실행되고, 스케줄에 의해 실행될 때마다 현시점에 더 근접한 데이터를 가져오기 때문이다.
+이는 연도 파티션 단위로 Spark Job이 실행되고, 스케줄에 의해 실행될 때마다 마지막 연도의 데이터를 가져와야 자동화가 되기 때문이다.
 
 예를 들어
 
 `2019-11` 데이터가 수집될 때 `2019` 파티션에 저장되고, Spark는 2019년 데이터에 대해 처리한다.
 
-다음 스케줄에는 `2019-12` 데이터가 수집되며 `2019` 파티션에 저장되고, Spark는 2019년 데이터에 대해 처리한다.
+다음 스케줄에는 `2019-12` 데이터가 수집되며 마찬가지로 `2019` 파티션에 저장되고, Spark는 2019년 데이터에 대해 처리한다.
 
 > 실행 시마다 해당연도 파티션에 월별 데이터가 누적되고, Spark가 처리하는 데이터양도 누적된다.
 
@@ -481,13 +598,13 @@ S3에 수집된 데이터를 파티션하는 연도 파티션에서 마지막 �
 
 다음 스케줄에는 `2020-01` 데이터가 수집되며 `2020` 파티션에 저장된다. Spark는 2020년 데이터에 대해 처리한다.
 
-이 Flow를 자동화 하기 위해서는 마지막 연도 정보를 가져오는 동적 처리가 필요하기 때문이다.
+이 Flow를 자동화 하기 위해서는 마지막 연도 정보를 가져오는 동적 처리가 필요하다.
 
 <br/>
 
 **create_job_flow**
 
-EMR Cluster를 생성한다.
+[EMR Cluster 아키텍처](#user-content-emr-cluster) 섹션에서 정의한 `JOB_FLOW_OVERRIDES` 정의를 기반으로 EMR Cluster를 생성한다.
 
 <br/>
 
