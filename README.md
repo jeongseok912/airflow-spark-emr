@@ -25,6 +25,16 @@ TLC Taxi Record 데이터셋 중 2019년부터 제공되기 시작한 우버(Ube
 <br/>
 <br/>
 
+### ML 학습용 데이터 서빙
+
+ETA(예상도착시간)를 예측하는 ML 학습용 데이터를 생성한다.
+
+> **기대 효과**
+>
+> 서비스 사용자에게 ETA(예상도착시간) 정보를 제공한다.
+
+<br/>
+
 ### 서비스 품질 분석
 
 경쟁사와 자사의 콜 요청장소까지 택시가 도착하는 소요시간을 비교 분석하는 데이터를 생성한다.
@@ -36,23 +46,13 @@ TLC Taxi Record 데이터셋 중 2019년부터 제공되기 시작한 우버(Ube
 
 <br/>
 
-### ML용 데이터 서빙
-
-ETA(예상도착시간)를 예측하는 ML 학습용 데이터를 생성한다.
-
-> **기대 효과**
->
-> 서비스 사용자에게 ETA(예상도착시간) 정보를 제공한다.
-
-<br/>
-
 ### 시장 점유율 수요 분석
 경쟁사와 자사의 서비스를 얼마나 사용하는지 비교 분석하는 데이터를 생성한다.
 
 > **기대 효과**
 >
 > 시장 규모를 파악하고, 시장에서 자사의 서비스가 어느 정도 수요가 있는지 파악한다.<br/>
-> 이 추이를 통해 이용자 감소 원인 파악, 점유율 증대를 위한 전략 등을 고민할 수 있다.
+> 이 추이를 보고 이용자 감소 원인 파악, 점유율 증대를 위한 전략 등을 고민할 수 있다.
 
 <br/>
 
@@ -71,7 +71,7 @@ ETA(예상도착시간)를 예측하는 ML 학습용 데이터를 생성한다.
 
 이런 분석 결과는 비즈니스 의사결정을 지원하거나 바로 서비스에 적용된다. 그렇기 때문에 일회성으로 분석되기보다는 지속적으로 분석되어져야 한다.
 
-즉 분석 결과(Metric)가 지속적으로 누적되며 시간 경과에 따른 트렌드(추이)를 만들고, 이를 모니터링함으로서 비즈니스 전략을 수립하거나 서비스를 고도화시킨다.
+즉 분석 결과 데이터(Metric)가 지속적으로 누적되며 시간 경과에 따른 트렌드(추이)를 만들고, 이를 모니터링함으로서 비즈니스 전략을 수립하거나 서비스를 고도화시킨다.
 
 데이터 엔지니어링 측면에서의 과제는 이런 가공된 데이터를 지속적으로 서빙하는 것이다. 
 
@@ -88,21 +88,27 @@ ETA(예상도착시간)를 예측하는 ML 학습용 데이터를 생성한다.
 
 # 서비스 및 용도
 
-사용하는 서비스와 해당 서비스가 사용되는 용도는 다음과 같다.
+사용하는 서비스와 용도는 다음과 같다.
+
+<br/>
 
 ### AWS - RDS (MySQL)
 
-Airflow 메타데이터 DB 및 수집할 데이터셋에 대한 메타데이터 제공, 커스텀 로깅 용도
+Airflow 메타데이터 DB로 사용, 수집할 데이터셋에 대한 메타데이터 제공, 커스텀 로깅 용도
 
 Airflow 메타 DB 외에 데이터셋에 대한 메타정보와 데이터셋 수집 시 별도로 로그를 저장하는 `tlc_taxi`라는 DB를 두었다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230822983-ddcf92a2-4770-4607-a49f-d03c6e4810e3.png)
+
+<br/>
 
 **`dataset_meta`**
 
 가져올 데이터셋에 대한 ID를 부여한 Master 테이블이다.
 
 ![image](https://user-images.githubusercontent.com/22818292/230822811-b91c61b0-8455-41f5-99a5-56f9091bd286.png)
+
+<br/>
 
 **`dataset_log`**
 
@@ -181,16 +187,16 @@ Airflow DAG, Spark script에 대한 저장소 및 배포 자동화를 위해 사
 
 ### Airflow / Spark Script 개발 및 배포 프로세스
 
-Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되면, GitHub Actions을 활용하여 Airflow Cluster Node들에 Airflow DAG가 배포되고, S3에 Spark Script가 배포된다.
+Local에서 Airflow DAG / Spark Script 개발 후 GitHub에 Push를 하게 되면, Airflow Cluster Node들에 Airflow DAG가 배포되고, S3에 Spark Script가 배포된다.
 
 ### 데이터 수집 프로세스
 
 1. RDS (MySQL)의 데이터셋 메타정보 테이블에서 수집할 데이터셋에 대한 링크 정보를 가져온다.
 
-2. 수집한 데이터셋을 S3에 저장한다.
+2. 수집 프로레스를 거쳐 수집한 데이터셋을 S3에 저장한다.
 
 ### 데이터 분석 프로세스
-1. EMR Cluster를 생성하고 EMR의 Spark submit Step을 실행한다.
+1. EMR Cluster를 생성하고 EMR의 Spark Job을 실행한다.
 
 2. 실행된 EMR Spark Application은 S3에서 Spark Script와 데이터를 읽어 분석 및 가공한다.
 
@@ -285,7 +291,7 @@ Push가 일어났을 때 Airflow Cluster의 모든 Node들의 DAG 폴더를 자�
 
 아래에 정의한 `JOB_FLOW_OVERRIDES` 정의를 이용하여 Spark만 사용할 예정이다.
 
-Spark가 수집되는 월별 데이터를 연도 파티션 단위로 처리할 예정이기 때문에, 연도 파티션에 데이터가 누적될수록 Spark Cluster Node 리소스도 꽤 필요하다.
+수집되는 월별 데이터를 Spark가 연도 파티션 단위로 처리할 예정이기 때문에, 연도 파티션에 데이터가 누적될수록 Spark Cluster Node 리소스도 꽤 필요하다.
 
 따라서 Node 사양은 `m5.xlarge` 유형을 사용하고, 2대의 Core Node로 구성한다.
 
@@ -386,9 +392,9 @@ airflow-spark-emr
 
   - `analyze_popular_location.py` : 인기 지역 분석 데이터를 생성하는 Script
   
-  - `prepare_eta_prediction.py` : ETA(도착예정시간) 예측을 위한 데이터를 생성하는 Script
+  - `prepare_eta_prediction.py` : ETA(도착예정시간) 예측을 위한 학습용 데이터를 생성하는 Script
   
-  - `preprocess_data.py` : Raw 데이터를 분석하기 위해 전처리하는 Script
+  - `preprocess_data.py` : 본격적으로 분석하기 전에 데이터를 전처리하는 Script
   
 <br/>
 <br/>
@@ -469,7 +475,7 @@ Dynamic Task Mapping은 Runtime 때 `n`개의 Task를 생성한다.
 
 ---
 
-수집 프로세스의 이번에 가져올 데이터셋 정보와 병렬 처리 로직을 좀 더 설명하면 다음과 같다.
+수집 프로세스의 이번에 수집할 데이터셋 정보와 병렬 처리 로직을 좀 더 설명하면 다음과 같다.
 
 예를들어
 
@@ -856,7 +862,7 @@ Airflow는 Task가 동시에 많이 실행되면 리소스 부족으로 Airflow 
 <br/>
 <br/>
 
-Task에 의해 Trigger된 총 4개의 분석 데이터를 생성하는 각 Spark Job은 모두 전처리된 데이터 경로인 S3의 `output/preprocess/{연도 파티션}` 경로에서 데이터를 읽는다.
+병렬로 구성된 4개의 Airflow Task에 의해 Trigger되는 Spark Job들은 모두 전처리된 데이터 경로인 S3의 `output/preprocess/{연도 파티션}` 경로에서 데이터를 읽는다.
 
 ![image](https://user-images.githubusercontent.com/22818292/231532969-e4c66107-dae3-475f-a3f4-f455ab6e1c53.png)
 
@@ -871,9 +877,9 @@ Task에 의해 Trigger된 총 4개의 분석 데이터를 생성하는 각 Spark
 
 Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `analyze_market_share`, `analyze_popular_location` Task는 이 `preprocess_pool` Pool의 Slot에서 실행된다.
 
-단, `preprocess_pool` Pool이 2개의 Slot을 가지고 있기 때문에 2개의 Task만 동시에 실행된다.
+단, `preprocess_pool` Pool이 2개의 Slot을 가지고 있기 때문에 최대 2개의 Task가 동시 실행이 가능하다.
 
-따라서 실행 우선 순위가 필요하고, 우선 순위는 다음과 같다.
+따라서 4개 Task가 2개짜리 Slot을 사용할 때의 실행 우선 순위가 필요하고, 우선 순위는 다음과 같다.
 
 <br/>
 
@@ -895,7 +901,7 @@ Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `ana
 
 `prepare_eta_prediction` Task의 Spark Job이 처리하는 데이터양이 많아 한 개의 Slot을 오랫동안 차지하고 실행하며, 
 
-나머지 한 Slot으로 `analyze_elapsed_time` >> `analyze_market_share` >> `analyze_popular_location` 순서로 실행된다.
+나머지 한 Slot으로 나머지 3개 Task가 `analyze_elapsed_time` >> `analyze_market_share` >> `analyze_popular_location` 순서로 실행된다.
 
 
 <br/>
@@ -915,7 +921,7 @@ Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `ana
 ## 최종 결과
 최종 분석 데이터는 `output/anlayze/{연도 파티션}` 경로에 저장된다.
 
-![image](https://user-images.githubusercontent.com/22818292/231221847-d4fc654b-3f64-4ff1-b33d-5a0954c5ceb9.png)
+![image](https://user-images.githubusercontent.com/22818292/231657452-9fe1168b-e1c3-405e-b6c4-8495591bd020.png)
 
 <br/>
 
@@ -923,15 +929,25 @@ Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `ana
 
 경쟁사와 자사의 택시의 콜 요청장소 도착소요시간을 비교 분석하는 데이터
 
-월별 / 경쟁사별 평균 도착소요시간을 라인 그래프로 시각화하기 적합하다.
-
 ![image](https://user-images.githubusercontent.com/22818292/231222245-793006b0-fe96-459a-a587-21d43fb412f8.png)
-
-![image](https://user-images.githubusercontent.com/22818292/231358350-0f001240-3416-487c-9a0c-633ae14a01a6.png)
 
 <br/>
 
-### elapsed
+이 데이터는 월별 / 경쟁사별 평균 도착소요시간을 라인 그래프로 시각화하기 적합하다.
+
+![image](https://user-images.githubusercontent.com/22818292/231358350-0f001240-3416-487c-9a0c-633ae14a01a6.png)
+
+Uber와 Lyft가 대표 차량공유서비스 업체로 어떻게 자리매김할 수 있었는지, 
+
+또 둘 중에서는 Uber가 압도적인 시장 점유율을 어떻게 차지할 수 있었는지 확연히 확인할 수 있다.
+
+서비스 품질을 평가하는 요소는 다양하겠지만, 콜 요청 후 요청장소까지 도착하는 소요시간이 두 업체는 10분 내외로 적게 소모되는 것을 확인할 수 있고,
+
+심지어 Uber는 5분 이내의 엄청 짧은 시간이 소요되는 걸 볼 수 있다.
+
+<br/>
+
+### elapsed_for_eta_prediction
 
 ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이터
 
@@ -943,11 +959,17 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 경쟁사별 / 월별 점유율을 나타내는 데이터
 
-월별 / 경쟁사별 라인 그래프로 시각화하기 적합하다.
-
 ![image](https://user-images.githubusercontent.com/22818292/231223700-b7c34733-1855-4b56-b9dc-906c0baa783e.png)
 
+<br/>
+
+월별 / 경쟁사별 라인 그래프로 시각화하기 적합하다.
+
 ![image](https://user-images.githubusercontent.com/22818292/231358439-352991f7-65dc-4155-a11a-cf17643b8ae4.png)
+
+Uber의 점유율이 압도적이고, 전체적인 추세를 보니 콜 요청장소까지의 도착소요시간이 상당한 상관관계가 있는게 육안으로도 확인된다.
+
+Uber의 운행 수가 저렇게 많은데도 불구하고 평균 도착소요시간이 5분도 안 걸린다는 거는 택시 매칭 시스템이 엄청 잘되어 있기 때문으로 판단된다.
 
 <br/>
 
@@ -955,9 +977,20 @@ ETA(예상도착시간)를 예측하는 ML 모델에 제공하기 위한 데이�
 
 택시 수요가 많은 인기 지역 및 급상승 인기 지역 데이터
 
-랭킹 차트, 트리맵 등으로 시각화하기 적합하다.
-
 ![image](https://user-images.githubusercontent.com/22818292/231352918-cd537088-0f32-49fc-bd36-8b1650620ff0.png)
+
+<br/>
+
+랭킹 차트, 트리맵 등으로 시각화하기 적합하다.
 
 ![image](https://user-images.githubusercontent.com/22818292/231361423-0c4c975d-d362-4dcf-8113-a4ec60873b52.png)
 
+2020년 10월에 `61` 지역은 2위인 `79` 지역에 비해 0.3% 나 점유율이 높다. 다른 랭킹 간 차이를 비교해보면 상대적으로 엄청난 차이다.
+
+이는 `61` 지역이 압도적인 수요가 있다는 뜻으로 풀 수 있다. 
+
+대기 중인 택시를 해당 지역 주변에서 대기하도록 하는 등의 전략을 세우면 좋을 것 같다.
+
+해당 달에 `26` 지역은 27 순위가 증가했으며, 갑자기 수요가 늘어난 지역이라고 볼 수 있다. 
+
+이 급작스런 수요가 어떤 원인에 의한 것인지 파악하고, 미래에도 이 수요가 증가/감소될지 분석해보면 좋을 것 같다.
