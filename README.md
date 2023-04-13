@@ -921,7 +921,7 @@ Spark Job을 실행하는 `prepare_eta_prediction`, `analyze_elapsed_time`, `ana
 ## 최종 결과
 최종 분석 데이터는 `output/anlayze/{연도 파티션}` 경로에 저장된다.
 
-![image](https://user-images.githubusercontent.com/22818292/231657452-9fe1168b-e1c3-405e-b6c4-8495591bd020.png)
+![image](https://user-images.githubusercontent.com/22818292/231661667-ea2d94bb-8eb5-4adb-859e-0d6b4035e084.png)
 
 <br/>
 
